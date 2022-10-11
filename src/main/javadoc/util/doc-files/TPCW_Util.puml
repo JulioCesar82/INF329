@@ -1,0 +1,19 @@
+@startuml
+package util{
+
+class TPCW_Util {
+
+    private static String[] arrayFnames = new String[]{...}
+    private static String[] arrayLnames = new String[]{...}
+    public static String getRandomLname(Random rand) 
+    public static String getRandomString(Random rand, int min, int max) 
+    public static int getRandomInt(Random rand, int lower, int upper) 
+    public static long getRandomLong(Random rand, long lower, long upper) 
+    public static Date getRandomBirthdate(Random rand) 
+ 
+    public static Date getRandomPublishdate(Random rand) 
+ 
+    public static String DigSyl(int d, int n) 
+}
+}
+@enduml

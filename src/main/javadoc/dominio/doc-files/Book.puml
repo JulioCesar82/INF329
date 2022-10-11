@@ -1,0 +1,71 @@
+@startuml
+package dominio{
+ class Book implements Serializable{ 
+
+
+    private static final long serialVersionUID = 6505830715531808617L;
+
+    private int id;
+    private String title;
+    private Date pubDate;
+    private String publisher;
+    private String subject;
+    private String desc;
+    private Book related1;
+    private Book related2;
+    private Book related3;
+    private Book related4;
+    private Book related5;
+    private String thumbnail;
+    private String image;
+    private double srp;
+    private double cost;
+    private Date avail;
+    private String isbn;
+    private int page;
+    private String backing;
+    private String dimensions;
+    private Author author;
+    private int stock;
+
+ 
+
+   public Book(int id, String title, Date pubDate, String publisher,            String subject, String desc, String thumbnail,            String image, double srp, double cost, Date avail, String isbn,            int page, String backing, String dimensions, Author author,            int stock) 
+    public String getTitle() 
+    public String getThumbnail() 
+    public void setThumbnail(String thumbnail) 
+    public void setCost(double cost) 
+    public String getImage() 
+    public void setImage(String image) 
+    public Author getAuthor() 
+    public double getSrp() 
+    public double getCost() 
+    public String getDesc() 
+    public int getPage() 
+    public String getBacking() 
+    public Date getPubDate() 
+    public void setPubDate(Date pubDate) 
+    public String getPublisher() 
+    public String getIsbn() 
+    public int getId() 
+    public String getDimensions() 
+    public String getSubject() 
+    public Date getAvail() 
+    public Book getRelated1() 
+    public Book getRelated2() 
+    public Book getRelated3() 
+    public Book getRelated4() 
+    public Book getRelated5() 
+    public void setRelated1(Book related1) 
+    public void setRelated2(Book related2) 
+    public void setRelated3(Book related3) 
+    public void setRelated4(Book related4) 
+    public void setRelated5(Book related5) 
+    public int getStock() 
+    public void setStock(int stock) 
+    public void addStock(int amount) 
+    public boolean equals(Object o) 
+    public int hashCode() 
+}
+}
+@enduml

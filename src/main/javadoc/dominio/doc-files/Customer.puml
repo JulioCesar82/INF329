@@ -1,0 +1,50 @@
+@startuml
+package dominio{
+ class Customer implements Serializable{
+
+    private static final long serialVersionUID = -7297414189618511748L;
+
+    private int id;
+    private String uname;
+    private String passwd;
+    private String fname;
+    private String lname;
+    private String phone;
+    private String email;
+    private Date since;
+    private Date lastVisit;
+    private Date login;
+    private Date expiration;
+    private double discount;
+    private double balance;
+    private double ytdPmt;
+    private Date birthdate;
+    private String data;
+    private Address address;
+    private Order mostRecentOrder;
+ 
+    public Customer(int id, String uname, String passwd, String fname,            String lname, String phone, String email, Date since,            Date lastVisit, Date login, Date expiration, double discount,            double balance, double ytdPmt, Date birthdate, String data,            Address address) 
+    public void setLogin(Date login) 
+    public void setExpiration(Date expiration) 
+    public String getFname() 
+    public String getLname() 
+    public int getId() 
+    public String getPasswd() 
+    public double getDiscount() 
+    public Address getAddress() 
+    public String getPhone() 
+    public String getEmail() 
+    public String getUname() 
+    public void logOrder(Order order) 
+    public Order getMostRecentOrder() 
+    public Date getSince() 
+    public Date getLastVisit() 
+    public Date getLogin() 
+    public Date getExpiration() 
+    public double getBalance() 
+    public double getYtdPmt() 
+    public Date getBirthdate() 
+    public String getData() 
+}
+}
+@enduml

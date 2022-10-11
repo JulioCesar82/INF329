@@ -1,0 +1,22 @@
+@startuml
+package dominio{
+ class Author implements Serializable {
+
+    private static final long serialVersionUID = 8882043540800200706L;
+
+    private String fname;
+    private String mname;
+    private String lname;
+    private Date birthdate;
+    private String bio;
+
+
+    public Author(String fname, String mname, String lname, Date birthdate,            String bio) 
+    public String getFname() 
+    public String getLname() 
+    public String getMname() 
+    public Date getBirthdate() 
+    public String getBio() 
+}
+}
+@enduml

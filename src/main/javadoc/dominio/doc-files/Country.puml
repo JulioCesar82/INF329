@@ -1,0 +1,21 @@
+@startuml
+package dominio{
+ class Country implements Serializable {
+    private static final long serialVersionUID = 5171617014956861344L;
+
+    private int id;
+    private String name;
+    private String currency;
+    private double exchange;
+
+    public Country(int id, String name, String currency, double exchange)
+
+    public int getId() 
+    public String getName() 
+    public String getCurrency() 
+    public double getExchange() 
+    public boolean equals(Object o) 
+    public int hashCode() 
+}
+}
+@enduml

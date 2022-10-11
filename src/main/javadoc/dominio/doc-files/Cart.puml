@@ -1,0 +1,28 @@
+@startuml
+package dominio{
+ class Cart implements Serializable {
+    private static final long serialVersionUID = -4194553499937996531L;
+
+    private int id;
+    private Date time;
+    private HashMap<Integer, CartLine> linesByBookId;
+    private double aggregateCost;
+    private int aggregateQuantity;
+
+
+    public Cart(int id, Date time) 
+
+    public int getId() 
+    public Date getTime() 
+    public void setTime(Date time) 
+    public void clear() 
+    public Collection<CartLine> getLines() 
+    public void increaseLine(Book book, int quantity) 
+    public void changeLine(Book book, int quantity) 
+    public double subTotal(double discount) 
+    public double tax(double discount) 
+    public double shipCost() 
+    public double total(double discount) 
+}
+}
+@enduml

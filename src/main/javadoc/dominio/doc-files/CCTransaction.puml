@@ -1,0 +1,26 @@
+@startuml
+package dominio{
+ class CCTransaction implements Serializable {
+    private static final long serialVersionUID = 5470177450411822726L;
+
+    private String type;
+    private long num;
+    private String name;
+    private Date expire;
+    private String authId;
+    private double amount;
+    private Date date;
+    private Country country;
+
+    public CCTransaction(String type, long num, String name, Date expire,            String authId, double amount, Date date, Country country)
+    
+    public String getType() 
+    public long getNum() 
+    public String getName() 
+    public Date getExpire() 
+    public String getAuthId() 
+    public double getAmount() 
+    public Date getDate() 
+}
+}
+@enduml

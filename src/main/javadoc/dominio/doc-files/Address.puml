@@ -1,0 +1,29 @@
+@startuml
+package dominio{
+ class Address implements Serializable {
+    
+    private static final long serialVersionUID = 3980790290181121772L;
+
+    private int id;
+    private String street1;
+    private String street2;
+    private String city;
+    private String state;
+    private String zip;
+    private Country country;
+
+    public Address(int id, String street1, String street2, String city, String state, String zip, Country country) {
+
+    public int getId() 
+    public String getStreet1() 
+    public String getStreet2() 
+    public String getCity() 
+    public String getState() 
+    public String getZip() 
+    public boolean equals(Object o) 
+            
+    public int hashCode() 
+        
+}
+}
+@enduml

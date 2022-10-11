@@ -1,0 +1,19 @@
+@startuml
+package dominio{
+ class OrderLine implements Serializable {
+    private static final long serialVersionUID = -5063511252485472431L;
+
+    private Book book;
+    private int qty;
+    private double discount;
+    private String comments;
+
+
+    public OrderLine(Book book, int qty, double discount, String comments) 
+    public Book getBook() 
+    public int getQty() 
+    public double getDiscount() 
+    public String getComments() 
+}
+}
+@enduml

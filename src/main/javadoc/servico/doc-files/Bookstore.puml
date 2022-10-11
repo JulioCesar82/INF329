@@ -1,0 +1,65 @@
+@startuml
+package servico{
+class Bookstore implements Serializable {
+
+    private static final long serialVersionUID = -3099048826035606338L;
+
+    private boolean populated;
+    private List<Country> countryById;
+    private Map<String, Country> countryByName;
+    private List<Address> addressById;
+    private Map<Address, Address> addressByAll;
+    private List<Customer> customersById;
+    private Map<String, Customer> customersByUsername;
+    private List<Author> authorsById;
+    private List<Book> booksById;
+    private List<Cart> cartsById;
+    private List<Order> ordersById;
+    private LinkedList<Order> ordersByCreation;
+
+
+    public Bookstore() 
+    public boolean isPopulated() 
+    public Address alwaysGetAddress(String street1, String street2,
+    private Address getAnAddressAnyAddress(Random random)     
+    private Address createAddress(String street1, String street2,
+    public Customer getCustomer(int cId) 
+    public Customer getCustomer(String username) 
+    private Customer getACustomerAnyCustomer(Random random) 
+    public Customer createCustomer(String fname, String lname, String street1, 
+    private Customer createCustomer(String fname, String lname, Address address,
+    public void refreshCustomerSession(int cId, long now) 
+    private Author getAnAuthorAnyAuthor(Random random) 
+    private Author createAuthor(String fname, String mname, String lname,
+    public Book getBook(int bId) 
+    private Book getABookAnyBook(Random random) 
+    public List<Book> getBooksBySubject(String subject) 
+    public List<Book> getBooksByTitle(String title) 
+    public List<Book> getBooksByAuthor(String author) 
+    public List<Book> getNewBooks(String subject) 
+    List<Book> getNewBooks0(String subject) 
+    List<Book> getNewBooks1(String subject) 
+    List<Book> getNewBooks2(String subject) 
+    List<Book> getNewBooks3(String subject) 
+    protected static class Counter 
+    private Book createBook(String title, Date pubDate, String publisher,
+    public void updateBook(int bId, double cost, String image,
+    private void updateRelatedBooks(Book targetBook) 
+    public int compare(Counter a, Counter b) 
+    public Cart getCart(int id) 
+    public Cart createCart(long now) 
+    public Cart cartUpdate(int cId, Integer bId, List<Integer> bIds,
+    public Order confirmBuy(int customerId, int cartId, String comment,
+    private Order createOrder(Customer customer, Date date, Cart cart, 
+
+    public boolean populate(long seed, long now, int items, int customers,
+    private void populateCountries() 
+    private void populateAddresses(int number, Random rand) 
+    private void populateCustomers(int number, Random rand, long now) 
+    private void populateAuthorTable(int number, Random rand) 
+    private void populateBooks(int number, Random rand) 
+    private void populateOrders(int number, Random rand, long now) 
+    
+}
+}
+@enduml

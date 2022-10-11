@@ -1,0 +1,17 @@
+@startuml
+package dominio{
+ class CartLine implements Serializable {
+
+    private static final long serialVersionUID = 7390646727961714957L;
+
+    private int qty;
+    private Book book;
+
+
+    public CartLine(int qty, Book book) 
+    public void setQty(int qty) 
+    public int getQty() 
+    public Book getBook() 
+}
+}
+@enduml

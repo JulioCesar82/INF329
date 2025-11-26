@@ -1,0 +1,43 @@
+@startuml
+!theme spacelab
+
+title Diagrama de Componentes - BookMarketCore
+
+package "Cliente Externo" {
+  [API / UI]
+}
+
+package "Serviços de Negócio" {
+  [Bookmarket] as Facade
+  [RecommendationService] as RecService
+}
+
+package "Repositórios (Interfaces)" {
+  interface BookRepository
+  interface OrderRepository
+}
+
+package "Implementação da Persistência" {
+  [Bookstore (In-Memory)] as InMemoryRepo
+}
+
+package "Domínio" {
+    [Entidades (Book, Order, ...)] as Domain
+}
+
+
+API -down-> Facade
+
+Facade ..> BookRepository : usa
+Facade ..> OrderRepository : usa
+Facade --> RecService : usa
+
+RecService --> Domain
+
+BookRepository <|.. InMemoryRepo
+OrderRepository <|.. InMemoryRepo
+
+InMemoryRepo --> Domain
+
+
+@enduml

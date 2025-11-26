@@ -288,22 +288,31 @@ public class Bookstore implements Serializable {
         return Optional.ofNullable(booksById.get(bId));
     }
 
+
     /**
-     *
-    
+     * @deprecated A lógica de negócio para recomendações foi centralizada em
+     * {@link Bookmarket}. Utilize
+     * {@link Bookmarket#getPriceBookRecommendationByUsers(int)} em vez deste
+     * método.
      */
+    @Deprecated
     public static List<Book> getRecommendationByItens(int c_id) {
-        // to do
+        // TODO: A lógica de recomendação baseada em itens (Item-based) do Mahout seria implementada aqui.
+        // No entanto, o foco atual é na recomendação baseada em usuário em Bookmarket.
         return null;
     }
 
     /**
-     *
-    
+     * @deprecated A lógica de negócio para recomendações foi centralizada em
+     * {@link Bookmarket}. Utilize
+     * {@link Bookmarket#getPriceBookRecommendationByUsers(int)} em vez deste
+     * método.
      */
+    @Deprecated
     public static List<Book> getRecommendationByUsers(int c_id) {
-        // to do
-       return null;
+        // TODO: A lógica de recomendação baseada em usuário (User-based) do Mahout seria implementada aqui.
+        // A implementação principal está agora definida em Bookmarket.
+        return null;
     }
 
     /**
@@ -461,9 +470,16 @@ public class Bookstore implements Serializable {
      *
      * @param subject
      * @return
+     *
+     * @deprecated A lógica de negócio para bestsellers foi centralizada em
+     * {@link Bookmarket}. Utilize {@link Bookmarket#getBestSellers(SUBJECTS)}
+     * em vez deste método.
+     * @param subject
+     * @return
      */
+    @Deprecated
     public List<Book> getBestSellers(SUBJECTS subject) {
-        // to do
+        // TODO: A implementação principal está agora definida em Bookmarket.
         return null;
     }
 
@@ -981,7 +997,34 @@ public class Bookstore implements Serializable {
 
     private static void populateEvaluation(Random rand) {
         System.out.print("Creating evaluation...");
-        // to do
+        // TODO: Guia de Implementação (US2):
+        // Este método deve popular o DataModel do Mahout com dados de avaliação
+        // para que o motor de recomendação possa ser treinado e testado.
+
+        // 1. Defina a quantidade de avaliações a serem criadas (ex: 50, conforme `board.pdf`).
+        final int numEvaluations = 50;
+
+        // 2. Instancie um DataModel do Mahout (ex: FastByIDMap<PreferenceArray>).
+        //    FastByIDMap<PreferenceArray> userData = new FastByIDMap<>();
+
+        // 3. Loop para criar as avaliações.
+        // for (int i = 0; i < numEvaluations; i++) {
+        //
+        //    4. Obtenha um cliente (usuário) e um livro aleatórios.
+        //       Customer randomCustomer = getACustomerAnyCustomer(rand);
+        //       Book randomBook = getABookAnyBook(rand);
+        //
+        //    5. Gere uma nota (rating) aleatória entre 0.0 e 5.0.
+        //       float rating = rand.nextFloat() * 5.0f;
+        //
+        //    6. Adicione a avaliação ao DataModel.
+        //       - A estrutura do Mahout geralmente envolve agrupar as preferências por usuário.
+        //       - Você precisará verificar se o usuário já tem uma lista de preferências,
+        //         recuperá-la, adicionar a nova, e colocar de volta no mapa.
+        // }
+        
+        // 7. Após o loop, o `DataModel` do Mahout estará populado e pronto para ser
+        //    usado pelo `Recommender` em Bookmarket.java.
         System.out.println(" Done");
     }
 

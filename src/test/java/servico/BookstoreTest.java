@@ -21,6 +21,16 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
+ * Testes unitários para a classe {@link Bookstore}.
+ * <p>
+ * O foco desta classe de testes é validar a camada de acesso e manipulação de
+ * dados em memória. Os testes aqui garantem que as operações de criação,
+
+ * recuperação e busca de entidades do domínio (como Livros, Clientes, etc.)
+ * funcionam conforme o esperado.
+ * <p>
+ * Esta classe testa o "repositório" da aplicação, não a lógica de negócio,
+ * que é testada em {@link BookmarketTest}.
  *
  * @author INF329
  */

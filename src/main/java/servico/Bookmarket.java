@@ -27,6 +27,16 @@ import java.util.stream.Stream;
 import util.TPCW_Util;
 
 /**
+ * Fachada de serviço principal para o e-commerce BookMarket.
+ * <p>
+ * Esta classe expõe todas as operações de negócio e implementa a lógica
+ * requerida pelas User Stories, orquestrando a obtenção de dados da classe
+ * {@link Bookstore} que atua como um repositório em memória.
+ * <p>
+ * Os métodos aqui presentes devem ser implementados para cumprir os requisitos
+ * de negócio, como a busca por bestsellers e a geração de recomendações
+ * personalizadas.
+ * <p>
  * <img src="./doc-files/Bookstore.png" alt="Bookmarket">
  * <br><a href="./doc-files/Bookmarket.html"> code </a>
  *
@@ -275,9 +285,36 @@ public class Bookmarket {
      *
      * @param subject
      * @return
+     * 
+     * **US1: Listagem dos Bestsellers.**
+     * <p>
+     * Calcula e retorna os livros mais vendidos (bestsellers) com base na
+     * contagem total de unidades vendidas em todos os pedidos históricos.
+     * A lógica deve somar a quantidade (`qty`) de cada livro presente em
+     * todas as {@link OrderLine}s.
+     * <p>
+     * O formato de retorno é um Mapa onde a chave é o {@link Book} e o valor é um
+     * conjunto de {@link Stock} (estoques), que permite ao consumidor do método
+     * ter acesso aos diferentes preços e disponibilidades.
+     * <p>
+     * **Nota de Implementação:** O requisito original (US1) pede uma lista geral
+     * dos "Top N" bestsellers. A assinatura atual deste método, que filtra por
+     * um {@code SUBJECTS}, é mais específica. A implementação deve considerar
+     * a possibilidade de generalização para atender ao requisito principal.
+     *
+     * @param subject O assunto para filtrar os bestsellers.
+     * @return Um {@link Map} onde cada {@link Book} mapeia para um {@link Set}
+     * de {@link Stock}s associados, ordenados pelo menor preço.
      */
     public static Map<Book, Set<Stock>> getBestSellers(SUBJECTS subject) {
-        // to do
+        // TODO: Implementar a lógica da US1.
+        // 1. Iterar sobre todas as ordens em `Bookstore.ordersByCreation`.
+        // 2. Para cada ordem, iterar sobre as `OrderLine`s.
+        // 3. Usar um `Map<Integer, Integer>` para agregar a `qty` total por `book.id`.
+        // 4. Ordenar o mapa de totais em ordem decrescente de quantidade.
+        // 5. Selecionar os 'N' primeiros (ex: 50, conforme US1).
+        // 6. Para cada livro do Top-N, buscar seus estoques (`Stock`) em `Bookstore.stockByBook`.
+        // 7. Montar o mapa de retorno `Map<Book, Set<Stock>>`.
         return null;
     }
 
@@ -285,7 +322,15 @@ public class Bookmarket {
      *
      * @param c_id
      * @return
+     *
+     * @deprecated A recomendação baseada em itens não faz parte dos requisitos
+     * definidos no `board.pdf`. A lógica de negócio está focada em
+     * {@link #getPriceBookRecommendationByUsers(int)}. Este método é obsoleto.
+     *
+     * @param c_id O ID do cliente.
+     * @return null.
      */
+    @Deprecated
     public static List<Book> getRecommendationByItens(int c_id) {
         return Bookstore.getRecommendationByItens(c_id);
     }
@@ -294,7 +339,15 @@ public class Bookmarket {
      *
      * @param c_id
      * @return
+     *
+     * @deprecated A lógica de recomendação foi consolidada em
+     * {@link #getPriceBookRecommendationByUsers(int)}. Este método é um
+     * pass-through obsoleto e será removido em futuras versões.
+     *
+     * @param c_id O ID do cliente.
+     * @return null.
      */
+    @Deprecated
     public static List<Book> getRecommendationByUsers(int c_id) {
         return Bookstore.getRecommendationByUsers(c_id);
     }
@@ -305,9 +358,19 @@ public class Bookmarket {
      *
      * @param c_id
      * @return
+     * 
+     * @deprecated A lógica de recomendação foi consolidada em
+     * {@link #getPriceBookRecommendationByUsers(int)}, que retorna o preço
+     * calculado em vez do objeto de estoque. Utilize o outro método para
+     * implementar a lógica das US3 e US4.
+     *
+     * @param c_id O ID do cliente.
+     * @return Um mapa de livros para seus estoques.
      */
+    @Deprecated
     public static Map<Book, Set<Stock>> getStocksRecommendationByUsers(int c_id) {
-        // to do
+        // TODO: A lógica principal de recomendação está em getPriceBookRecommendationByUsers.
+        // Este método não é mais necessário para os requisitos atuais.
         return null;
     }
 
@@ -318,9 +381,55 @@ public class Bookmarket {
      *
      * @param c_id
      * @return
+     * 
+     * **US3 & US4: Sugestão de Livros para Clientes Regulares e Assinantes.**
+     * <p>
+     * Gera uma lista de 5 livros recomendados para um determinado cliente e calcula
+     * o preço a ser exibido com base no seu perfil (Regular vs. Assinante).
+     * <p>
+     * A lógica de negócio se divide em dois casos:
+     * <ul>
+     * <li><b>US3 - Cliente Regular:</b> Para clientes com `discount == 0`, o preço
+     * exibido para cada livro recomendado deve ser a **média de seu preço de venda
+     * histórico**, calculado a partir de todas as {@link OrderLine}s.</li>
+     * <li><b>US4 - Assinante:</b> Para clientes com `discount > 0`, o preço
+     * exibido deve ser o **menor valor promocional disponível** para o livro
+     * naquele momento, obtido do {@link Stock}.</li>
+     * </ul>
+     *
+     * @param c_id O ID do cliente para o qual a recomendação será gerada.
+     * @return Um {@link Map} onde cada {@link Book} recomendado mapeia para o seu
+     * preço calculado ({@code Double}).
      */
     public static Map<Book, Double> getPriceBookRecommendationByUsers(int c_id) {
-        // to do
+        // TODO: Implementar a lógica das US3 e US4.
+        // 1. Obter o cliente (Customer) usando `Bookstore.getCustomer(c_id)`.
+        //
+        // 2. Gerar a lista de livros recomendados (ex: 5 livros).
+        //    - A lógica de recomendação (ex: usando Mahout ou outra estratégia) deve ser implementada aqui.
+        //    - Para este guia, vamos assumir que uma `List<Book> recommendedBooks` foi gerada.
+        //
+        // 3. Verificar o tipo de cliente.
+        //    boolean isSubscriber = customer.getDiscount() > 0;
+        //
+        // 4. Criar o mapa de resultado: `Map<Book, Double> result = new HashMap<>();`
+        //
+        // 5. Iterar sobre cada `book` em `recommendedBooks`.
+        //    - IF (isSubscriber) -> Lógica da US4:
+        //        a. Obter o `Stock` do livro a partir de `Bookstore.stockByBook`.
+        //        b. Obter o preço promocional (`stock.getCost()`).
+        //        c. Adicionar ao mapa: `result.put(book, stock.getCost());`
+        //
+        //    - ELSE -> Lógica da US3:
+        //        a. Calcular o preço médio histórico do livro. Para isso, é preciso:
+        //        b. Iterar por todas as `Order` em `Bookstore.ordersByCreation`.
+        //        c. Dentro de cada ordem, iterar pelas `OrderLine`s.
+        //        d. Se a `orderLine.getBook().getId()` for igual ao `book.getId()`,
+        //           somar o `orderLine.getPrice()` e contar a `orderLine.getQty()`.
+        //        e. Calcular a média: `totalPrice / totalQty`.
+        //        f. Adicionar ao mapa: `result.put(book, averagePrice);`
+        //
+        // 6. Retornar o `result`.
         return null;
     }
 

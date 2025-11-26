@@ -1,0 +1,44 @@
+@startuml
+!theme spacelab
+
+title Diagrama de Sequência - Recomendação de Preços (US3/US4)
+
+actor "Cliente API" as Client
+participant "Bookmarket" as Facade
+participant "RecommendationService" as RecService
+participant "OrderRepository" as OrderRepo
+participant "BookRepository" as BookRepo
+
+Client -> Facade: getPriceBookRecommendationByUsers(c_id)
+activate Facade
+
+Facade -> RecService: getRecommendations(c_id, 5)
+activate RecService
+RecService -> RecService: Usa Mahout para calcular
+RecService --> Facade: List<Book>
+deactivate RecService
+
+Facade -> Facade: Determina se cliente é Assinante
+
+alt Cliente é Assinante (US4)
+    loop para cada Livro recomendado
+        Facade -> BookRepo: findStockByBook(book)
+        activate BookRepo
+        BookRepo --> Facade: Stock (com preço promocional)
+        deactivate BookRepo
+        Facade -> Facade: Extrai o menor preço
+    end
+else Cliente é Regular (US3)
+    Facade -> OrderRepo: findAll()
+    activate OrderRepo
+    OrderRepo --> Facade: List<Order>
+    deactivate OrderRepo
+    loop para cada Livro recomendado
+        Facade -> Facade: Calcula preço médio do livro a partir do histórico de Ordens
+    end
+end
+
+Facade --> Client: Map<Book, Double> (com preços calculados)
+deactivate Facade
+
+@enduml

@@ -64,6 +64,7 @@ import dominio.Customer;
 import dominio.Order;
 import dominio.OrderLine;
 import dominio.SUBJECTS;
+import dominio.Rating;
 import dominio.StatusTypes;
 import dominio.Stock;
 import util.TPCW_Util;
@@ -77,6 +78,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -102,6 +104,7 @@ public class Bookstore implements Serializable {
     private static final Map<String, Customer> customersByUsername;
     private static final List<Author> authorsById;
     private static final List<Book> booksById;
+    public static final Set<Rating> ratings = new HashSet<>();
     private final Map<Book, Stock> stockByBook;
     private final List<Cart> cartsById;
     private final List<Order> ordersById;
@@ -121,6 +124,7 @@ public class Bookstore implements Serializable {
         customersByUsername = new HashMap<>();
         authorsById = new ArrayList<>();
         booksById = new ArrayList<>();
+        ratings.clear(); // Limpa as avaliações estáticas entre os testes
     }
 
     /**
@@ -400,6 +404,32 @@ public class Bookstore implements Serializable {
             }
         });
         return books.subList(0, books.size() >= 50 ? 50 : books.size());
+    }
+
+    /**
+     * Adiciona uma nova avaliação ou atualiza uma existente.
+     * <p>
+     * A unicidade é garantida pela implementação de `equals` e `hashCode` na
+     * classe {@link Rating}, que considera o par cliente/livro. Se uma avaliação
+     * para o mesmo par já existir no `Set`, ela é removida e a nova é adicionada,
+     * efetivamente atualizando a nota.
+     *
+     * @param newRating A nova avaliação a ser armazenada.
+     */
+    public static void addOrUpdateRating(Rating newRating) {
+        ratings.remove(newRating); // Remove a avaliação antiga, se existir
+        ratings.add(newRating);    // Adiciona a nova avaliação
+    }
+
+    /**
+     * Recupera uma avaliação específica com base no ID do cliente e do livro.
+     *
+     * @param customerId O ID do cliente.
+     * @param bookId O ID do livro.
+     * @return O objeto {@link Rating} se encontrado, caso contrário, {@code null}.
+     */
+    public static Rating getRating(int customerId, int bookId) {
+        return ratings.stream().filter(r -> r.getCustomer().getId() == customerId && r.getBook().getId() == bookId).findFirst().orElse(null);
     }
 
     List<Book> getNewBooks1(SUBJECTS subject) {

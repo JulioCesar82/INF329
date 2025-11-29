@@ -10,6 +10,7 @@ import dominio.Order;
 import dominio.OrderLine;
 import dominio.SUBJECTS;
 import dominio.Stock;
+import dominio.Rating;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -431,6 +432,40 @@ public class Bookmarket {
         //
         // 6. Retornar o `result`.
         return null;
+    }
+
+    /**
+     * **US2: Avaliação e Registro de Preferência de Livros.**
+     * <p>
+     * Registra ou atualiza a avaliação (rating) de um livro para um cliente específico.
+     * A lógica segue as seguintes regras de negócio:
+     * <ul>
+     *   <li><b>Validação de Entradas:</b> Garante que o cliente e o livro existem. Lança
+     *   {@code IllegalArgumentException} se não forem encontrados.</li>
+     *   <li><b>Validação da Nota:</b> A nota deve estar entre 1 e 5 (inclusive). Lança
+     *   {@code IllegalArgumentException} para valores fora desse intervalo.</li>
+     *   <li><b>Armazenamento:</b> A avaliação é armazenada na coleção de ratings do Bookstore.
+     *   Se já existir uma avaliação para o mesmo cliente e livro, ela é atualizada.</li>
+     * </ul>
+     *
+     * @param customerId O ID do cliente que está fazendo a avaliação.
+     * @param bookId O ID do livro a ser avaliado.
+     * @param rating A nota atribuída ao livro (deve ser entre 1 e 5).
+     * @throws IllegalArgumentException se o cliente, livro ou nota forem inválidos.
+     */
+    public static void rateBook(int customerId, int bookId, int rating) {
+        if (rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("A nota da avaliação deve ser entre 1 e 5.");
+        }
+
+        Customer customer = Bookstore.getCustomer(customerId);
+        if (customer == null) {
+            throw new IllegalArgumentException("Cliente com ID " + customerId + " não encontrado.");
+        }
+
+        Book book = Bookstore.getBook(bookId).orElseThrow(() -> new IllegalArgumentException("Livro com ID " + bookId + " não encontrado."));
+
+        Bookstore.addOrUpdateRating(new Rating(customer, book, rating));
     }
 
     /**

@@ -1028,4 +1028,8 @@ public class Bookstore implements Serializable {
         System.out.println(" Done");
     }
 
+    public List<Order> getOrdersByCreation() {
+        return this.ordersByCreation; // Assuming ordersByCreation is the field name
+    }
+
 }

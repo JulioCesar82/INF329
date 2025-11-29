@@ -13,8 +13,13 @@ import dominio.Stock;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -306,16 +311,67 @@ public class Bookmarket {
      * @return Um {@link Map} onde cada {@link Book} mapeia para um {@link Set}
      * de {@link Stock}s associados, ordenados pelo menor preço.
      */
-    public static Map<Book, Set<Stock>> getBestSellers(SUBJECTS subject) {
+    public static Map<Book, Set<Stock>> getBestSellers() {
         // TODO: Implementar a lógica da US1.
         // 1. Iterar sobre todas as ordens em `Bookstore.ordersByCreation`.
-        // 2. Para cada ordem, iterar sobre as `OrderLine`s.
+        // 2. Para cada ordem, iterar sobre as  `OrderLine`s.
         // 3. Usar um `Map<Integer, Integer>` para agregar a `qty` total por `book.id`.
         // 4. Ordenar o mapa de totais em ordem decrescente de quantidade.
         // 5. Selecionar os 'N' primeiros (ex: 50, conforme US1).
         // 6. Para cada livro do Top-N, buscar seus estoques (`Stock`) em `Bookstore.stockByBook`.
         // 7. Montar o mapa de retorno `Map<Book, Set<Stock>>`.
-        return null;
+
+
+        Map<Integer, Integer> bestSellersMap = new HashMap<>();
+
+        List<Bookstore> bookstores = getBookstoreStream().collect(Collectors.toList());
+        for (Bookstore bookstore : bookstores) {
+            List<Order> bookstoreOrders = bookstore.getOrdersByCreation();
+            for (Order order : bookstoreOrders){
+                for (OrderLine line : order.getLines()){
+                    Book book = line.getBook();
+                    int qty = line.getQty();
+
+                    //TODO: Consider the subject here
+
+                    bestSellersMap.put(book.getId(), qty);
+                }
+            }
+        }
+
+        // Cria um novo mapa ordenado dos bestsellers, onde:
+        // 1. Converte o conjunto de entradas (bookId -> quantidade vendida) em um stream.
+        Map<Integer, Integer> sortedBestSellersMap = bestSellersMap.entrySet()
+            // 2. Ordena as entradas do stream em ordem decrescente de quantidade vendida.
+            .stream()
+            .sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed())
+            // 3. Coleta as entradas ordenadas em um LinkedHashMap para manter a ordem de inserção,
+            //    usando a chave e valor originais, e resolvendo conflitos mantendo o primeiro valor encontrado.
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,      // chave do mapa: bookId
+                Map.Entry::getValue,    // valor do mapa: quantidade vendida
+                (e1, e2) -> e1,         // em caso de chaves duplicadas, mantém o primeiro valor
+                LinkedHashMap::new      // usa LinkedHashMap para preservar a ordem de inserção (ordenada)
+            ));
+
+        Map<Book, Set<Stock>> bestSellersResultMap = new HashMap<>();
+
+        for (Map.Entry<Integer, Integer> entry : sortedBestSellersMap.entrySet()) {
+            Integer bookId = entry.getKey();
+            Integer qty = entry.getValue();
+            
+            Book book = Bookstore.getBook(bookId).get();
+            Set<Stock> stocks = getBookstoreStream()
+                .map(store -> store.getStock(bookId))
+                .filter(stock -> stock != null)
+                // Itera sobre todas as ordens criadas nesta instância de Bookstore.
+                // Útil para agregar vendas históricas de livros em todas as livrarias do sistema.
+                .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Stock::getCost))));
+ 
+            bestSellersResultMap.put(book,stocks);
+        }
+
+        return bestSellersResultMap;
     }
 
     /**

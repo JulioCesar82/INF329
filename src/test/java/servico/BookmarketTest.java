@@ -181,6 +181,17 @@ public class BookmarketTest {
         // 1. Prepare um ambiente de teste sem nenhuma ordem (`Order`).
         // 2. Execute o método de bestsellers.
         // 3. Verifique se o mapa retornado está vazio (`assertTrue(result.isEmpty())`).
+
+        System.out.println("getBestsellers");
+
+        // Cenário 1: Teste de Bestsellers com N válido
+        int N = 500;
+        Map<Book, Set<Stock>> result = Bookmarket.getBestSellers(); // ou getBestSellers(N) se houver parâmetro
+        assertNotNull("O mapa retornado não deve ser nulo", result);
+        assertEquals("A quantidade de livros no mapa deve ser " + N, N, result.size());
+
+        // TODO: Improve this test
+    
     }
 
 }

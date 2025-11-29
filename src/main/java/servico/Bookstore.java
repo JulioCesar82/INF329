@@ -217,6 +217,9 @@ public class Bookstore implements Serializable {
      
      */
     public static Customer getCustomer(int cId) {
+        if (cId < 0 || cId >= customersById.size()) {
+            return null;
+        }
         return customersById.get(cId);
     }
 
@@ -289,6 +292,9 @@ public class Bookstore implements Serializable {
     
      */
     public static Optional<Book> getBook(int bId) {
+        if (bId < 0 || bId >= booksById.size()) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(booksById.get(bId));
     }
 

@@ -197,7 +197,7 @@ public class BookmarketTest {
      * <li><b>Cenário 3 (Nota Inválida):</b> Verifica se o sistema rejeita uma
      * avaliação com nota fora do intervalo (1-5), lançando
      * IllegalArgumentException.</li>
-     * <li><b>Cenário 4 (Entidade Inválida):</b> Verifica se o sistema rejeita
+     * <li><b>Cenário 4 (Entidades Inválidas):</b> Verifica se o sistema rejeita
      * uma avaliação para um cliente ou livro inexistente.</li>
      * </ul>
      */
@@ -248,5 +248,29 @@ public class BookmarketTest {
         int invalidRating = 6; // Nota fora do intervalo 1-5
         // Act
         Bookmarket.rateBook(customerId, bookId, invalidRating);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testRateBook_WithNonExistentCustomer_ShouldThrowException() {
+        System.out.println("rateBook: non-existent customer scenario");
+        // Arrange
+        int nonExistentCustomerId = 9999; // ID de cliente que sabidamente não existe
+        int bookId = 28;
+        int ratingValue = 4;
+
+        // Act
+        Bookmarket.rateBook(nonExistentCustomerId, bookId, ratingValue);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testRateBook_WithNonExistentBook_ShouldThrowException() {
+        System.out.println("rateBook: non-existent book scenario");
+        // Arrange
+        int customerId = 13;
+        int nonExistentBookId = 9999; // ID de livro que sabidamente não existe
+        int ratingValue = 4;
+
+        // Act
+        Bookmarket.rateBook(customerId, nonExistentBookId, ratingValue);
     }
 }

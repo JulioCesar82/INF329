@@ -1,8 +1,9 @@
 package servico;
 
 import dominio.ShipTypes;
-import dominio.Address;
 import dominio.Book;
+import dominio.Address;
+import dominio.BestsellerBook;
 import dominio.Cart;
 import dominio.CreditCards;
 import dominio.Customer;
@@ -277,45 +278,44 @@ public class Bookmarket {
     }
 
     /**
-     *
-     * Retorna uma map na qual: (1) as "chaves da map" (keys) são os 50 livros
-     * mais vendidos de um determinado assunto (subject) de todas as Bookstores
-     * e (2) "os valores da map" (values) são conjuntos (set) de estoques
-     * (Stock) do livro da key, ordenados de forma crescente por valor de cost
-     *
-     * @param subject
-     * @return
-     * 
      * **US1: Listagem dos Bestsellers.**
      * <p>
      * Calcula e retorna os livros mais vendidos (bestsellers) com base na
      * contagem total de unidades vendidas em todos os pedidos históricos.
      * A lógica deve somar a quantidade (`qty`) de cada livro presente em
      * todas as {@link OrderLine}s.
-     * <p>
-     * O formato de retorno é um Mapa onde a chave é o {@link Book} e o valor é um
-     * conjunto de {@link Stock} (estoques), que permite ao consumidor do método
-     * ter acesso aos diferentes preços e disponibilidades.
-     * <p>
-     * **Nota de Implementação:** O requisito original (US1) pede uma lista geral
-     * dos "Top N" bestsellers. A assinatura atual deste método, que filtra por
-     * um {@code SUBJECTS}, é mais específica. A implementação deve considerar
-     * a possibilidade de generalização para atender ao requisito principal.
      *
-     * @param subject O assunto para filtrar os bestsellers.
-     * @return Um {@link Map} onde cada {@link Book} mapeia para um {@link Set}
-     * de {@link Stock}s associados, ordenados pelo menor preço.
+     * @param limit O número de bestsellers a serem retornados (deve estar entre 1 e 100).
+     * @return Uma lista de {@link BestsellerBook} ordenada pela contagem de vendas.
+     * @throws IllegalArgumentException se o limite for inválido.
      */
-    public static Map<Book, Set<Stock>> getBestSellers(SUBJECTS subject) {
-        // TODO: Implementar a lógica da US1.
-        // 1. Iterar sobre todas as ordens em `Bookstore.ordersByCreation`.
-        // 2. Para cada ordem, iterar sobre as `OrderLine`s.
-        // 3. Usar um `Map<Integer, Integer>` para agregar a `qty` total por `book.id`.
-        // 4. Ordenar o mapa de totais em ordem decrescente de quantidade.
-        // 5. Selecionar os 'N' primeiros (ex: 50, conforme US1).
-        // 6. Para cada livro do Top-N, buscar seus estoques (`Stock`) em `Bookstore.stockByBook`.
-        // 7. Montar o mapa de retorno `Map<Book, Set<Stock>>`.
-        return null;
+    public static List<BestsellerBook> getBestsellers(int limit) {
+        // Regra de Negócio (US1 - No1, No2): Validar o limite N.
+        if (limit <= 0 || limit > 100) {
+            throw new IllegalArgumentException("O limite (N) deve ser um valor entre 1 e 100.");
+        }
+
+        // 1. Agrega a quantidade de vendas por livro.
+        Map<Book, Long> salesByBook = getBookstoreStream()
+            .flatMap(bookstore -> ((Bookstore) bookstore).getOrdersByCreation().stream())
+            .flatMap(order -> ((Order) order).getLines().stream())
+            .collect(Collectors.groupingBy(
+                    OrderLine::getBook,
+                    Collectors.summingLong(OrderLine::getQty)
+            ));
+
+        // 2. Cria os DTOs, ordena e retorna a lista final.
+        return salesByBook.entrySet().stream()
+            .map(entry -> new BestsellerBook(entry.getKey(), entry.getValue()))
+            .sorted(
+                // Regra de Negócio (US1): Ordenação decrescente por vendas.
+                Comparator.comparingLong(BestsellerBook::getSalesCount).reversed()
+                    // Regra de Negócio (US1 - P04): Empate, ordenação crescente por título.
+                    .thenComparing(b -> b.getBook().getTitle())
+            )
+            // Regra de Negócio (US1): Retornar a quantidade N solicitada.
+            .limit(limit)
+            .collect(Collectors.toList());
     }
 
     /**

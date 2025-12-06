@@ -5,6 +5,7 @@ import dominio.Cart;
 import dominio.CreditCards;
 import dominio.Customer;
 import dominio.Order;
+import dominio.OrderLine;
 import dominio.SUBJECTS;
 import dominio.ShipTypes;
 import dominio.Stock;
@@ -21,6 +22,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
 
 /**
  * Suíte de testes para a lógica de negócio da classe {@link Bookmarket}.
@@ -166,21 +168,38 @@ public class BookmarketTest {
     public void testGetBestsellers() {
         System.out.println("getBestsellers");
 
+        System.out.println(Bookmarket.getBestSellers(SUBJECTS.ARTS, 5));
+        assertNotNull("Retorno nulo ao buscar bestsellers", Bookmarket.getBestSellers(null,5));
+        assertEquals("Tamanhodo retorno nao bate com o tamanho informado",5, Bookmarket.getBestSellers(SUBJECTS.ARTS, 5).size());
+        assertEquals("Tamanhodo retorno nao bate com o tamanho default:50",50, Bookmarket.getBestSellers(SUBJECTS.ARTS).size());
+
         // TODO: Cenário 1: Teste de Bestsellers com N válido
-        // 1. Execute Bookmarket.getBestSellers(SUBJECTS.ARTS) (ou uma versão generalizada).
-        // 2. Verifique se o mapa retornado não é nulo.
-        // 3. Verifique se a quantidade de livros no mapa corresponde ao esperado (ex: 5).
-        // 4. Verifique se os livros estão ordenados corretamente (o mais vendido primeiro).
+        // 1. Execute Bookmarket.getBestSellers(SUBJECTS.ARTS) (ou uma versão generalizada). ---ok
+        // 2. Verifique se o mapa retornado não é nulo. ---ok
+        // 3. Verifique se a quantidade de livros no mapa corresponde ao esperado (ex: 5). ---ok
+        // 4. Verifique se os livros estão ordenados corretamente (o mais vendido primeiro). --- ???
         //    - Para isso, será preciso calcular o ranking esperado manualmente.
 
         // TODO: Cenário 2: Teste de Limite Inválido
-        // 1. Use assertThrows para chamar o método com N=0 ou N=101.
-        // 2. Verifique se uma `IllegalArgumentException` é lançada.
+        // 1. Use assertThrows para chamar o método com N=0 ou N=101. --ok
+        // 2. Verifique se uma `IllegalArgumentException` é lançada. --ok 
 
         // TODO: Cenário 3: Teste com Histórico de Vendas Vazio
         // 1. Prepare um ambiente de teste sem nenhuma ordem (`Order`).
         // 2. Execute o método de bestsellers.
         // 3. Verifique se o mapa retornado está vazio (`assertTrue(result.isEmpty())`).
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testTopNGreaterThan100Throws() {
+     System.out.println("testTopNGreaterThan100Throws");
+    Bookmarket.getBestSellers(SUBJECTS.ARTS, 101);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testTopNZeroThrows() {
+        System.out.println("testTopNZeroThrows");
+    Bookmarket.getBestSellers(SUBJECTS.ARTS, 0);
     }
 
 }

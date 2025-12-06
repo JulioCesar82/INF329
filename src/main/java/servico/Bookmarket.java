@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -25,6 +26,8 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import util.TPCW_Util;
+import dominio.Category;
+import java.lang.Integer;
 
 /**
  * Fachada de serviço principal para o e-commerce BookMarket.
@@ -276,6 +279,18 @@ public class Bookmarket {
                 collect(Collectors.toList());
     }
 
+
+
+
+
+    public static Map<Book, Set<Stock>> getBestSellers() {
+        return getBestSellers(null, 50);
+    }
+    
+    public static Map<Book, Set<Stock>> getBestSellers(Category category) {
+        return getBestSellers(category, 50);
+    }
+
     /**
      *
      * Retorna uma map na qual: (1) as "chaves da map" (keys) são os 50 livros
@@ -306,7 +321,8 @@ public class Bookmarket {
      * @return Um {@link Map} onde cada {@link Book} mapeia para um {@link Set}
      * de {@link Stock}s associados, ordenados pelo menor preço.
      */
-    public static Map<Book, Set<Stock>> getBestSellers(SUBJECTS subject) {
+    public static Map<Book, Set<Stock>> getBestSellers(Category category , int topN) {
+
         // TODO: Implementar a lógica da US1.
         // 1. Iterar sobre todas as ordens em `Bookstore.ordersByCreation`.
         // 2. Para cada ordem, iterar sobre as `OrderLine`s.
@@ -315,8 +331,53 @@ public class Bookmarket {
         // 5. Selecionar os 'N' primeiros (ex: 50, conforme US1).
         // 6. Para cada livro do Top-N, buscar seus estoques (`Stock`) em `Bookstore.stockByBook`.
         // 7. Montar o mapa de retorno `Map<Book, Set<Stock>>`.
-        return null;
+
+        if (topN <= 0) {
+            throw new IllegalArgumentException("topN deve ser maior que zero.");
+        }
+        else if (topN > 100){
+            throw new IllegalArgumentException("topN deve ser menor ou igual a 100.");
+        };
+
+        Map <Book,Integer> totalByBook = getBookstoreStream()
+                                        .flatMap(state -> state.getOrdersById().stream())
+                                        .flatMap(order -> order.getLines().stream())
+                                        .filter(orderLine -> {if (category == null) return true;    
+                                                            Book b = orderLine.getBook();
+
+                                                            if (category instanceof SUBJECTS)
+                                                                return b.getSubject() == category;
+                                                            return false;})
+                                        .collect(Collectors.groupingBy(
+                                        OrderLine::getBook,
+                                        Collectors.summingInt(OrderLine::getQty)
+                                        ));
+
+
+        List<Map.Entry<Book, Integer>> topEntries = totalByBook.entrySet().stream()
+                                        .sorted(Map.Entry.<Book, Integer>comparingByValue(Comparator.reverseOrder()))
+                                        .limit(topN)
+                                        .collect(Collectors.toList());
+
+        Map<Book, Set<Stock>> result = new LinkedHashMap<>();
+                                        for (Map.Entry<Book, Integer> entry : topEntries) {
+                                            Book book = entry.getKey();
+        
+        Set<Stock> stocks = getBookstoreStream()
+                            .map(store -> store.getStock(book.getId()))
+                            .collect(Collectors.toCollection(() ->
+                            new TreeSet<>(Comparator.comparingDouble(Stock::getCost))
+                            ));
+
+        result.put(book, stocks);}
+
+        return result;
+                    
     }
+
+
+
+
 
     /**
      *

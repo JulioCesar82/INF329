@@ -308,6 +308,30 @@ public class BookmarketTest {
      * que retorna um Map<Book, Set<Stock>.
      */
     @Test
+    public void testGetBestsellers() {
+         System.out.println("getBestSellersMap_DefaultNoParams");
+
+        // Arrange
+        int limit = 50; // Default limit
+
+        // Act        
+        Map<Book, Set<Stock>> bestsellers = Bookmarket.getBestSellers();
+        
+        // Assert
+        assertNotNull("O mapa de bestsellers não pode ser nulo.", bestsellers);
+        assertEquals("O mapa deve conter o número de livros solicitado (padrão 50).", limit, bestsellers.size());
+
+        // Verifica se a ordem do mapa (LinkedHashMap) corresponde à ordem da lista de BestsellerBook
+        List<BestsellerBook> expectedOrder = Bookmarket.getBestSellerBooks(null, limit);
+        List<Book> actualOrder = new ArrayList<>(bestsellers.keySet());
+
+        for (int i = 0; i < limit; i++) {
+            assertEquals("A ordem dos livros no mapa deve corresponder à ordem dos best-sellers.",
+                         expectedOrder.get(i).getBook(), actualOrder.get(i));
+        }
+    }
+
+    @Test
     public void testGetBestSellersMap_PositiveScenario() {
         System.out.println("getBestSellersMap_PositiveScenario");
 

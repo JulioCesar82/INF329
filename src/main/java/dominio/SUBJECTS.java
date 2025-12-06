@@ -6,10 +6,12 @@
 package dominio;
 
 /**
- *
+ * Enum representing various book subjects.
+ * Implements the Category interface to categorize books.
+ * 
  * @author User
  */
-public enum SUBJECTS {
+public enum SUBJECTS implements Category {
     ARTS, BIOGRAPHIES, BUSINESS, CHILDREN,
         COMPUTERS, COOKING, HEALTH, HISTORY,
         HOME, HUMOR, LITERATURE, MYSTERY,

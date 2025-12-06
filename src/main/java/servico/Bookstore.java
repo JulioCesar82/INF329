@@ -107,8 +107,8 @@ public class Bookstore implements Serializable {
     public static final Set<Rating> ratings = new HashSet<>();
     private final Map<Book, Stock> stockByBook;
     private final List<Cart> cartsById;
-    private final List<Order> ordersById;
-    private final LinkedList<Order> ordersByCreation;
+    protected final List<Order> ordersById;
+    protected final LinkedList<Order> ordersByCreation;
     
     private final int id;
 
@@ -547,6 +547,15 @@ public class Bookstore implements Serializable {
     }
 
     /**
+     * Retorna a lista de pedidos ordenada por data de criação.
+     *
+     * @return Uma {@link LinkedList} de {@link Order}s.
+     */
+    public LinkedList<Order> getOrdersByCreation() {
+        return ordersByCreation;
+    }
+
+    /**
      *
      * @param bId
      * @param image
@@ -725,8 +734,6 @@ public class Bookstore implements Serializable {
         cart.clear();
         return order;
     }
-
-
 
     private static Random rand;
 

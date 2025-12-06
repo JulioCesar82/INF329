@@ -46,6 +46,12 @@ public class RecommendationService {
      * @param evaluations A lista de todas as avaliações de usuários.
      */
     public void initialize(List<Evaluation> evaluations) {
+        // TODO: Nota Arquitetural sobre o Mapper.
+        // Antes de chamar este método, será necessário implementar um "Mapper".
+        // A responsabilidade desse Mapper será converter a lista de objetos do
+        // nosso domínio (`List<dominio.Rating>`) para o formato esperado por esta
+        // camada de integração (`List<dominio.Evaluation>`).
+
         // TODO: Guia de Implementação da Inicialização do Mahout.
         // 1. Crie uma instância de um DataModel do Mahout. Para dados em memória,
         //    o `GenericDataModel` é uma boa escolha. Será preciso converter a

@@ -2,6 +2,7 @@ package servico;
 
 import dominio.Book;
 import dominio.Cart;
+import dominio.Rating;
 import dominio.CreditCards;
 import dominio.Customer;
 import dominio.Order;
@@ -183,4 +184,93 @@ public class BookmarketTest {
         // 3. Verifique se o mapa retornado está vazio (`assertTrue(result.isEmpty())`).
     }
 
+    /**
+     * Test of rateBook method, of class Bookmarket.
+     *
+     * Testa os cenários de avaliação de livros (US2).
+     *
+     * <ul>
+     * <li><b>Cenário 1 (Sucesso):</b> Verifica se um cliente consegue avaliar um
+     * livro com uma nota válida e se a avaliação é armazenada.</li>
+     * <li><b>Cenário 2 (Atualização):</b> Verifica se, ao avaliar o mesmo livro
+     * novamente, a nota anterior é substituída pela nova.</li>
+     * <li><b>Cenário 3 (Nota Inválida):</b> Verifica se o sistema rejeita uma
+     * avaliação com nota fora do intervalo (1-5), lançando
+     * IllegalArgumentException.</li>
+     * <li><b>Cenário 4 (Entidades Inválidas):</b> Verifica se o sistema rejeita
+     * uma avaliação para um cliente ou livro inexistente.</li>
+     * </ul>
+     */
+    @Test
+    public void testRateBook_WithValidData_ShouldStoreRating() {
+        System.out.println("rateBook: valid scenario");
+        // Arrange
+        int customerId = 10;
+        int bookId = 25;
+        int ratingValue = 5;
+
+        // Act
+        Bookmarket.rateBook(customerId, bookId, ratingValue);
+
+        // Assert
+        Rating storedRating = Bookstore.getRating(customerId, bookId);
+        assertNotNull("A avaliação deveria ter sido salva.", storedRating);
+        assertEquals("A nota armazenada está incorreta.", ratingValue, storedRating.getRating());
+    }
+
+    @Test
+    public void testRateBook_WhenRatingExists_ShouldUpdateRating() {
+        System.out.println("rateBook: update scenario");
+        // Arrange
+        int customerId = 11;
+        int bookId = 26;
+        Bookmarket.rateBook(customerId, bookId, 3); // Avaliação inicial
+
+        int newRatingValue = 1;
+
+        // Act
+        Bookmarket.rateBook(customerId, bookId, newRatingValue);
+
+        // Assert
+        Rating updatedRating = Bookstore.getRating(customerId, bookId);
+        assertNotNull(updatedRating);
+        assertEquals("A nota deveria ter sido atualizada.", newRatingValue, updatedRating.getRating());
+        assertEquals("Deveria haver apenas uma avaliação para este par cliente/livro.", 1,
+                Bookstore.ratings.stream().filter(r -> r.getCustomer().getId() == customerId && r.getBook().getId() == bookId).count());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testRateBook_WithInvalidRating_ShouldThrowException() {
+        System.out.println("rateBook: invalid rating scenario");
+        // Arrange
+        int customerId = 12;
+        int bookId = 27;
+        int invalidRating = 6; // Nota fora do intervalo 1-5
+        // Act
+        Bookmarket.rateBook(customerId, bookId, invalidRating);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testRateBook_WithNonExistentCustomer_ShouldThrowException() {
+        System.out.println("rateBook: non-existent customer scenario");
+        // Arrange
+        int nonExistentCustomerId = 9999; // ID de cliente que sabidamente não existe
+        int bookId = 28;
+        int ratingValue = 4;
+
+        // Act
+        Bookmarket.rateBook(nonExistentCustomerId, bookId, ratingValue);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testRateBook_WithNonExistentBook_ShouldThrowException() {
+        System.out.println("rateBook: non-existent book scenario");
+        // Arrange
+        int customerId = 13;
+        int nonExistentBookId = 9999; // ID de livro que sabidamente não existe
+        int ratingValue = 4;
+
+        // Act
+        Bookmarket.rateBook(customerId, nonExistentBookId, ratingValue);
+    }
 }

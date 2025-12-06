@@ -3,20 +3,26 @@ package dominio;
 import java.io.Serializable;
 
 /**
- * <img src="./doc-files/Evaluation.png" alt="Bookmarket">
- * <br><a href="./doc-files/Evaluation.html"> code </a>
- *
- */
-
-/**
- * Representa a avaliação (rating) de um livro por um usuário.
+ * **Decisão Arquitetural: Objeto de Transferência de Dados (DTO) para Integração.**
  * <p>
- * Esta classe é o objeto de domínio central para a User Story US2, que trata
- * do registro de preferência de um cliente por um livro. Ela armazena a
- * relação entre um usuário, um item (livro) e a nota que ele atribuiu.
+ * Esta classe atua como um Data Transfer Object (DTO) e faz parte da camada
+ * de "Anti-Corrupção" (Anti-Corruption Layer) do nosso sistema. Seu objetivo
+ * é desacoplar nosso modelo de domínio (`Rating`) das dependências de
+ * bibliotecas externas, como o Apache Mahout.
  * <p>
- * Objetos desta classe podem ser usados para popular o {@code DataModel} do
- * Apache Mahout.
+ * Enquanto a classe {@link Rating} é rica e utiliza objetos do nosso domínio
+ * (`Customer`, `Book`), a classe `Evaluation` usa tipos primitivos (`long`, `float`),
+ * que são o formato esperado pelo `DataModel` do Mahout.
+ * <p>
+ * **Uso Futuro:** Quando a funcionalidade de recomendação for implementada,
+ * um "Mapper" será criado para converter objetos `Rating` do nosso domínio
+ * em objetos `Evaluation`, que serão então usados para alimentar o motor de
+ * recomendação.
+ * <p>
+ * Manter esta classe, mesmo que não utilizada no momento, é uma decisão
+ * consciente para preservar a intenção de design para a futura integração.
+ * Isso segue o princípio de ter modelos distintos para diferentes Bounded
+ * Contexts (nosso domínio vs. o domínio da biblioteca de recomendação).
  * <p>
  * <img src="./doc-files/Evaluation.png" alt="Bookmarket">
  * <br><a href="./doc-files/Evaluation.html"> code </a>

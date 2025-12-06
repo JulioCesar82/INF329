@@ -8,11 +8,15 @@ import dominio.CreditCards;
 import dominio.Customer;
 import dominio.Order;
 import dominio.OrderLine;
+import dominio.SUBJECTS;
 import dominio.ShipTypes;
+import dominio.Stock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
 import java.util.Comparator;
+import java.util.Map;
+import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -164,13 +168,17 @@ public class BookmarketTest {
     @Test
     public void testGetBestsellers_PositiveScenario() {
         System.out.println("getBestsellers");
+
         // Arrange
         int limit = 10;
 
-        // Act
-        List<BestsellerBook> bestsellers = Bookmarket.getBestsellers(limit);
-
+        // Act        
+        List<BestsellerBook> bestsellers = Bookmarket.getBestSellerBooks(SUBJECTS.ARTS, limit);
+        
         // Assert
+        // assertNotNull("Retorno nulo ao buscar bestsellers", Bookmarket.getBestSellers(null,5));
+        // assertEquals("Tamanhodo retorno nao bate com o tamanho informado",5, Bookmarket.getBestSellers(SUBJECTS.ARTS, 5).size());
+        // assertEquals("Tamanhodo retorno nao bate com o tamanho default:50",50, Bookmarket.getBestSellers(SUBJECTS.ARTS).size());
         assertNotNull("A lista de bestsellers não pode ser nula.", bestsellers);
         assertEquals("A lista deve conter o número de livros solicitado.", limit, bestsellers.size());
 
@@ -219,7 +227,7 @@ public class BookmarketTest {
                 customer.getFname(), new Date(), ShipTypes.AIR);
 
         // Act
-        List<BestsellerBook> bestsellers = Bookmarket.getBestsellers(5);
+        List<BestsellerBook> bestsellers = Bookmarket.getBestSellerBooks(null, 5);
 
         // Assert
         BestsellerBook bestseller1 = bestsellers.stream().filter(b -> b.getBook().getId() == book1.getId()).findFirst().orElse(null);
@@ -246,7 +254,7 @@ public class BookmarketTest {
     public void testGetBestsellers_WithInvalidLimitOfZero() {
         System.out.println("getBestsellers_WithInvalidLimitOfZero");
         // Act
-        Bookmarket.getBestsellers(0);
+        Bookmarket.getBestSellers(0);
     }
 
     /**
@@ -257,7 +265,7 @@ public class BookmarketTest {
     public void testGetBestsellers_WithInvalidLimitAbove100() {
         System.out.println("getBestsellers_WithInvalidLimitAbove100");
         // Act
-        Bookmarket.getBestsellers(101);
+        Bookmarket.getBestSellers(101);
     }
 
     /**
@@ -274,11 +282,116 @@ public class BookmarketTest {
 
 
         // Act
-        List<BestsellerBook> bestsellers = Bookmarket.getBestsellers(10);
+        List<BestsellerBook> bestsellers = Bookmarket.getBestSellerBooks(null, 10);
 
         // Assert
         assertNotNull("A lista não pode ser nula, mesmo que vazia.", bestsellers);
         assertTrue("A lista de bestsellers deve estar vazia quando não há vendas.", bestsellers.isEmpty());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testTopNGreaterThan100Throws() {
+        System.out.println("testTopNGreaterThan100Throws");
+        Bookmarket.getBestSellers(SUBJECTS.ARTS, 101);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testTopNZeroThrows() {
+        System.out.println("testTopNZeroThrows");
+        Bookmarket.getBestSellers(SUBJECTS.ARTS, 0);
+    }
+
+    /**
+     * Teste do método getBestSellers, da classe Bookmarket, com foco no tipo de retorno Map.
+     *
+     * Este conjunto de testes replica os testes de Bestsellers (US1) para a API pública
+     * que retorna um Map<Book, Set<Stock>.
+     */
+    @Test
+    public void testGetBestSellersMap_PositiveScenario() {
+        System.out.println("getBestSellersMap_PositiveScenario");
+
+        // Arrange
+        int limit = 10;
+        SUBJECTS category = SUBJECTS.ARTS;
+
+        // Act        
+        Map<Book, Set<Stock>> bestsellers = Bookmarket.getBestSellers(category, limit);
+        
+        // Assert
+        assertNotNull("O mapa de bestsellers não pode ser nulo.", bestsellers);
+        assertEquals("O mapa deve conter o número de livros solicitado.", limit, bestsellers.size());
+
+        // Verifica se a ordem do mapa (LinkedHashMap) corresponde à ordem da lista de BestsellerBook
+        List<BestsellerBook> expectedOrder = Bookmarket.getBestSellerBooks(category, limit);
+        List<Book> actualOrder = new ArrayList<>(bestsellers.keySet());
+
+        for (int i = 0; i < limit; i++) {
+            assertEquals("A ordem dos livros no mapa deve corresponder à ordem dos best-sellers.",
+                         expectedOrder.get(i).getBook(), actualOrder.get(i));
+        }
+    }
+
+    @Test
+    public void testGetBestSellersMap_WithTies() {
+        System.out.println("getBestSellersMap_WithTies");
+        // Arrange: Força um empate entre dois livros
+        Bookmarket.getStateMachine().getState()
+                .forEach(bookstore -> ((FakeBookstore) bookstore).clearOrders());
+
+        Book book1 = Bookstore.getBook(1).get(); // "THE ROAD TO RICHES"
+        Book book2 = Bookstore.getBook(2).get(); // "THE TALE OF TWO CITIES"
+        
+        assertTrue(book1.getTitle().compareTo(book2.getTitle()) < 0);
+
+        int cartId = Bookmarket.createEmptyCart(0);
+        Cart cart = Bookmarket.getCart(0, cartId);
+        cart.increaseLine(Bookmarket.getStock(0, book1.getId()), 10);
+        cart.increaseLine(Bookmarket.getStock(0, book2.getId()), 10);
+
+        Customer customer = Bookstore.getCustomer(1);
+        Bookmarket.doBuyConfirm(0, cartId, customer.getId(), CreditCards.VISA, 1234567890123456L,
+                customer.getFname(), new Date(), ShipTypes.AIR);
+
+        // Act
+        Map<Book, Set<Stock>> bestsellersMap = Bookmarket.getBestSellers(null, 5);
+        List<Book> books = new ArrayList<>(bestsellersMap.keySet());
+
+        // Assert
+        assertTrue("O mapa de best-sellers deve conter ambos os livros.",
+                   bestsellersMap.containsKey(book1) && bestsellersMap.containsKey(book2));
+
+        int index1 = books.indexOf(book1);
+        int index2 = books.indexOf(book2);
+
+        assertTrue("Com contagens de vendas iguais, o livro com título alfabeticamente anterior deve vir primeiro no mapa.", index1 < index2);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetBestSellersMap_WithInvalidLimitOfZero() {
+        System.out.println("getBestSellersMap_WithInvalidLimitOfZero");
+        Bookmarket.getBestSellers(0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetBestSellersMap_WithInvalidLimitAbove100() {
+        System.out.println("getBestSellersMap_WithInvalidLimitAbove100");
+        Bookmarket.getBestSellers(101);
+    }
+
+    @Test
+    public void testGetBestSellersMap_WithEmptySalesHistory() {
+        System.out.println("getBestSellersMap_WithEmptySalesHistory");
+        // Arrange
+        Bookmarket.getStateMachine().getState()
+                .forEach(bookstore -> ((FakeBookstore) bookstore).clearOrders());
+
+        // Act
+        Map<Book, Set<Stock>> bestsellers = Bookmarket.getBestSellers(null, 10);
+
+        // Assert
+        assertNotNull("O mapa não pode ser nulo, mesmo que vazio.", bestsellers);
+        assertTrue("O mapa de bestsellers deve estar vazio quando não há vendas.", bestsellers.isEmpty());
     }
 
     /**

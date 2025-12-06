@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -27,6 +28,8 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import util.TPCW_Util;
+import dominio.Category;
+import java.lang.Integer;
 
 /**
  * Fachada de serviço principal para o e-commerce BookMarket.
@@ -278,6 +281,48 @@ public class Bookmarket {
                 collect(Collectors.toList());
     }
 
+
+
+
+
+    public static Map<Book, Set<Stock>> getBestSellers() {
+        return getBestSellers(null, null);
+    }
+
+    public static Map<Book, Set<Stock>> getBestSellers(SUBJECTS subject) {
+        return getBestSellers(subject, null);
+    }
+    
+    public static Map<Book, Set<Stock>> getBestSellers(Category category) {
+        return getBestSellers(category, null);
+    }
+
+    public static Map<Book, Set<Stock>> getBestSellers(int limit) {
+        return getBestSellers(null, limit);
+    }
+
+    public static Map<Book, Set<Stock>> getBestSellers(Category category, Integer limit) {
+        List<BestsellerBook> bestsellerBooks = getBestSellerBooks(category, limit);
+
+        // 2. Cria os DTOs e retorna a lista final.
+        Map<Book, Set<Stock>> result = new LinkedHashMap<>();
+        
+        for (BestsellerBook bestsellerBook : bestsellerBooks) {
+            Book book = bestsellerBook.getBook();
+
+            Set<Stock> stocks = getBookstoreStream()
+                .map(store -> store.getStock(book.getId()))
+                .collect(Collectors.toCollection(() ->
+                new TreeSet<>(Comparator.comparingDouble(Stock::getCost))
+            ));
+
+            result.put(book, stocks);
+        }
+
+        return result;
+    }
+                    
+
     /**
      * **US1: Listagem dos Bestsellers.**
      * <p>
@@ -290,7 +335,10 @@ public class Bookmarket {
      * @return Uma lista de {@link BestsellerBook} ordenada pela contagem de vendas.
      * @throws IllegalArgumentException se o limite for inválido.
      */
-    public static List<BestsellerBook> getBestsellers(int limit) {
+    public static List<BestsellerBook> getBestSellerBooks(Category category, Integer limit) {
+        if (limit == null)
+            limit = 50;
+
         // Regra de Negócio (US1 - No1, No2): Validar o limite N.
         if (limit <= 0 || limit > 100) {
             throw new IllegalArgumentException("O limite (N) deve ser um valor entre 1 e 100.");
@@ -300,6 +348,17 @@ public class Bookmarket {
         Map<Book, Long> salesByBook = getBookstoreStream()
             .flatMap(bookstore -> ((Bookstore) bookstore).getOrdersByCreation().stream())
             .flatMap(order -> ((Order) order).getLines().stream())
+            .filter(orderLine -> {
+                if (category == null)
+                    return true;
+                    
+                Book b = orderLine.getBook();
+
+                if (category instanceof SUBJECTS)
+                    return b.getSubject() == category;
+
+                return false;
+            })
             .collect(Collectors.groupingBy(
                     OrderLine::getBook,
                     Collectors.summingLong(OrderLine::getQty)
@@ -318,6 +377,10 @@ public class Bookmarket {
             .limit(limit)
             .collect(Collectors.toList());
     }
+
+
+
+
 
     /**
      *

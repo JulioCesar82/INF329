@@ -733,7 +733,7 @@ public class Bookstore implements Serializable {
         customer.logOrder(order);
         cart.clear();
         return order;
-    }    
+    }
 
     private static Random rand;
 

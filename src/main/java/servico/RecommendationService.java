@@ -1,20 +1,27 @@
 package servico;
 
-import dominio.Book;
 import dominio.Evaluation;
+import org.apache.mahout.cf.taste.common.TasteException;
+import org.apache.mahout.cf.taste.impl.common.FastByIDMap;
 import org.apache.mahout.cf.taste.impl.model.GenericDataModel;
-import org.apache.mahout.cf.taste.impl.model.file.FileDataModel;
-import org.apache.mahout.cf.taste.impl.neighborhood.ThresholdUserNeighborhood;
+import org.apache.mahout.cf.taste.impl.model.GenericPreference;
+import org.apache.mahout.cf.taste.impl.model.GenericUserPreferenceArray;
+import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
 import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
 import org.apache.mahout.cf.taste.model.DataModel;
+import org.apache.mahout.cf.taste.model.Preference;
+import org.apache.mahout.cf.taste.model.PreferenceArray;
 import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
 import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.apache.mahout.cf.taste.recommender.UserBasedRecommender;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Serviço dedicado a encapsular a lógica do motor de recomendação Apache Mahout.
@@ -25,17 +32,15 @@ import java.util.List;
  */
 public class RecommendationService {
 
-    // TODO: Declarações de campos para o Mahout.
-    // private UserBasedRecommender recommender;
-    // private DataModel dataModel;
+    private UserBasedRecommender recommender;
+    private DataModel dataModel;
     private boolean isInitialized = false;
+    private static final int NEIGHBORHOOD_SIZE = 10;
 
     /**
-     * Construtor privado para encorajar a criação de uma única instância
-     * gerenciada.
+     * Construtor padrão.
      */
     public RecommendationService() {
-        // Inicialização pode ser feita aqui ou em um método `init`.
     }
 
     /**
@@ -46,39 +51,43 @@ public class RecommendationService {
      * @param evaluations A lista de todas as avaliações de usuários.
      */
     public void initialize(List<Evaluation> evaluations) {
-        // TODO: Nota Arquitetural sobre o Mapper.
-        // Antes de chamar este método, será necessário implementar um "Mapper".
-        // A responsabilidade desse Mapper será converter a lista de objetos do
-        // nosso domínio (`List<dominio.Rating>`) para o formato esperado por esta
-        // camada de integração (`List<dominio.Evaluation>`).
+        try {
+            // 1. Converte a lista de `Evaluation` para o formato que o Mahout espera (FastByIDMap<PreferenceArray>).
+            Map<Long, List<Preference>> preferencesByUser = evaluations.stream()
+                .collect(Collectors.groupingBy(
+                    Evaluation::getUserId,
+                    Collectors.mapping(
+                        eval -> new GenericPreference(eval.getUserId(), eval.getBookId(), eval.getRating()),
+                        Collectors.toList()
+                    )
+                ));
 
-        // TODO: Guia de Implementação da Inicialização do Mahout.
-        // 1. Crie uma instância de um DataModel do Mahout. Para dados em memória,
-        //    o `GenericDataModel` é uma boa escolha. Será preciso converter a
-        //    lista de `Evaluation` para o formato que o Mahout espera
-        //    (FastByIDMap<PreferenceArray>).
-        //
-        //    Exemplo de estrutura:
-        //    FastByIDMap<PreferenceArray> preferences = new FastByIDMap<>();
-        //    for (Evaluation eval : evaluations) {
-        //        // Agrupar as avaliações por usuário
-        //    }
-        //    dataModel = new GenericDataModel(preferences);
-        //
-        // 2. Instancie o `UserSimilarity`. Com base no `board.pdf`, usaremos `PearsonCorrelationSimilarity`.
-        //    UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModel);
-        //
-        // 3. Instancie o `UserNeighborhood`. O `board.pdf` menciona NearestNUserNeighborhood,
-        //    mas vamos usar um `ThresholdUserNeighborhood` como exemplo.
-        //    UserNeighborhood neighborhood = new ThresholdUserNeighborhood(0.1, similarity, dataModel);
-        //
-        // 4. Instancie o `Recommender`. O `board.pdf` especifica `GenericUserBasedRecommender`.
-        //    recommender = new GenericUserBasedRecommender(dataModel, neighborhood, similarity);
-        //
-        // 5. Marque o serviço como inicializado.
-        //    isInitialized = true;
+            FastByIDMap<PreferenceArray> preferences = new FastByIDMap<>();
+            for (Map.Entry<Long, List<Preference>> entry : preferencesByUser.entrySet()) {
+                preferences.put(entry.getKey(), new GenericUserPreferenceArray(entry.getValue()));
+            }
 
-        System.out.println("RecommendationService inicializado (simulação).");
+            this.dataModel = new GenericDataModel(preferences);
+
+            // 2. Instancia a Similaridade (PearsonCorrelationSimilarity)
+            UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModel);
+
+            // 3. Instancia a Vizinhança (NearestNUserNeighborhood)
+            UserNeighborhood neighborhood = new NearestNUserNeighborhood(NEIGHBORHOOD_SIZE, similarity, dataModel);
+
+            // 4. Instancia o Recomendador (GenericUserBasedRecommender)
+            this.recommender = new GenericUserBasedRecommender(dataModel, neighborhood, similarity);
+
+            // 5. Marca o serviço como inicializado.
+            this.isInitialized = true;
+            System.out.println("RecommendationService inicializado com sucesso.");
+
+        } catch (TasteException e) {
+            // Em um cenário real, um logging mais robusto seria ideal.
+            System.err.println("Falha ao inicializar o RecommendationService: " + e.getMessage());
+            e.printStackTrace();
+            this.isInitialized = false;
+        }
     }
 
     /**
@@ -87,23 +96,28 @@ public class RecommendationService {
      * @param userId  O ID do usuário para o qual gerar as recomendações.
      * @param howMany O número de recomendações a serem geradas.
      * @return Uma lista de IDs de livros recomendados.
+     * @throws TasteException se o Mahout encontrar um erro, como um usuário desconhecido.
      */
-    public List<Long> getRecommendations(long userId, int howMany) {
+    public List<Long> getRecommendations(long userId, int howMany) throws TasteException {
         if (!isInitialized) {
-            System.out.println("Serviço de recomendação não inicializado.");
+            System.err.println("Serviço de recomendação não foi inicializado corretamente.");
             return Collections.emptyList();
         }
 
-        // TODO: Guia de Implementação da Geração de Recomendação.
-        // 1. Chame o método `recommender.recommend(userId, howMany)`.
-        //
-        //    List<RecommendedItem> items = recommender.recommend(userId, howMany);
-        //
-        // 2. Extraia os IDs dos itens (livros) da lista de `RecommendedItem`.
-        //
-        //    return items.stream().map(RecommendedItem::getItemID).collect(Collectors.toList());
+        // 1. Chama o método recommender.recommend(userId, howMany).
+        List<RecommendedItem> items = recommender.recommend(userId, howMany);
 
-        System.out.println("Gerando " + howMany + " recomendações para o usuário " + userId + " (simulação).");
-        return Collections.emptyList(); // Retorno de placeholder
+        // 2. Extrai os IDs dos itens (livros) da lista de RecommendedItem.
+        return items.stream()
+                .map(RecommendedItem::getItemID)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Verifica se o serviço foi inicializado com sucesso.
+     * @return {@code true} se o serviço estiver pronto, {@code false} caso contrário.
+     */
+    public boolean isInitialized() {
+        return isInitialized;
     }
 }

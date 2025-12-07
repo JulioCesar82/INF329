@@ -1,5 +1,6 @@
 package servico;
 
+import dominio.Evaluation;
 import dominio.ShipTypes;
 import dominio.Book;
 import dominio.Address;
@@ -15,6 +16,7 @@ import dominio.Rating;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -27,6 +29,7 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.mahout.cf.taste.common.TasteException;
 import util.TPCW_Util;
 import dominio.Category;
 import java.lang.Integer;
@@ -90,6 +93,8 @@ public class Bookmarket {
     }
     private static Random random;
     private static StateMachine stateMachine;
+    private static final RecommendationService recommendationService = new RecommendationService();
+    private static final int MAX_RECOMMENDATIONS = 5;
 
     static StateMachine getStateMachine() {
         return stateMachine;
@@ -466,35 +471,84 @@ public class Bookmarket {
      * preço calculado ({@code Double}).
      */
     public static Map<Book, Double> getPriceBookRecommendationByUsers(int c_id) {
-        // TODO: Implementar a lógica das US3 e US4.
-        // 1. Obter o cliente (Customer) usando `Bookstore.getCustomer(c_id)`.
-        //
-        // 2. Gerar a lista de livros recomendados (ex: 5 livros).
-        //    - A lógica de recomendação (ex: usando Mahout ou outra estratégia) deve ser implementada aqui.
-        //    - Para este guia, vamos assumir que uma `List<Book> recommendedBooks` foi gerada.
-        //
-        // 3. Verificar o tipo de cliente.
-        //    boolean isSubscriber = customer.getDiscount() > 0;
-        //
-        // 4. Criar o mapa de resultado: `Map<Book, Double> result = new HashMap<>();`
-        //
-        // 5. Iterar sobre cada `book` em `recommendedBooks`.
-        //    - IF (isSubscriber) -> Lógica da US4:
-        //        a. Obter o `Stock` do livro a partir de `Bookstore.stockByBook`.
-        //        b. Obter o preço promocional (`stock.getCost()`).
-        //        c. Adicionar ao mapa: `result.put(book, stock.getCost());`
-        //
-        //    - ELSE -> Lógica da US3:
-        //        a. Calcular o preço médio histórico do livro. Para isso, é preciso:
-        //        b. Iterar por todas as `Order` em `Bookstore.ordersByCreation`.
-        //        c. Dentro de cada ordem, iterar pelas `OrderLine`s.
-        //        d. Se a `orderLine.getBook().getId()` for igual ao `book.getId()`,
-        //           somar o `orderLine.getPrice()` e contar a `orderLine.getQty()`.
-        //        e. Calcular a média: `totalPrice / totalQty`.
-        //        f. Adicionar ao mapa: `result.put(book, averagePrice);`
-        //
-        // 6. Retornar o `result`.
-        return null;
+        Customer customer = Bookstore.getCustomer(c_id);
+        if (customer == null) {
+            throw new IllegalArgumentException("Cliente com ID " + c_id + " não encontrado.");
+        }
+
+        List<Long> recommendedBookIds = new ArrayList<>();
+        try {
+            if (!recommendationService.isInitialized()) {
+                initializeRecommendationService();
+            }
+            recommendedBookIds = recommendationService.getRecommendations(c_id, MAX_RECOMMENDATIONS);
+        } catch (TasteException e) {
+            // A exceção é capturada, mas a lógica de fallback é tratada abaixo
+            // com base na lista vazia, o que cobre este caso.
+        }
+
+        List<Book> recommendedBooks = new ArrayList<>();
+        if (recommendedBookIds.isEmpty()) {
+            // US3/US4-N01 (Fallback): Cliente novo ou sem perfil. Retorna bestsellers.
+            List<BestsellerBook> bestsellers = getBestSellerBooks(null, MAX_RECOMMENDATIONS);
+            bestsellers.forEach(b -> recommendedBooks.add(b.getBook()));
+        } else {
+            for (Long bookId : recommendedBookIds) {
+                Bookstore.getBook(bookId.intValue()).ifPresent(recommendedBooks::add);
+            }
+        }
+
+        boolean isSubscriber = customer.getDiscount() > 0;
+        Map<Book, Double> result = new LinkedHashMap<>();
+
+        for (Book book : recommendedBooks) {
+            double price;
+            if (isSubscriber) {
+                // US4: Lógica para Assinantes (Menor Preço)
+                price = getLowestAvailablePrice(book.getId());
+            } else {
+                // US3: Lógica para Clientes Regulares (Preço Médio)
+                price = getAverageSalePrice(book.getId());
+            }
+            result.put(book, price);
+        }
+
+        return result;
+    }
+
+    /**
+     * Calcula o preço médio de venda de um livro com base em seu histórico.
+     * @param bookId O ID do livro.
+     * @return O preço médio de venda.
+     */
+    private static double getAverageSalePrice(long bookId) {
+        // Coleta todos os preços de cada unidade vendida
+        List<Double> pricesOfAllUnitsSold = getBookstoreStream()
+                .flatMap(bookstore -> ((Bookstore) bookstore).getOrdersByCreation().stream())
+                .flatMap(order -> ((Order) order).getLines().stream())
+                .filter(line -> line.getBook().getId() == bookId)
+                .flatMap(line -> Collections.nCopies(line.getQty(), line.getPrice()).stream())
+                .collect(Collectors.toList());
+    
+        // Calcula a média
+        return pricesOfAllUnitsSold.stream()
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0); // Retorna 0 se não houver histórico de vendas
+    }
+
+    /**
+     * Obtém o menor preço disponível para um livro a partir do estoque.
+     * @param bookId O ID do livro.
+     * @return O menor preço de estoque.
+     */
+    private static double getLowestAvailablePrice(long bookId) {
+        return getBookstoreStream()
+                .map(store -> ((Bookstore)store).getStock((int)bookId))
+                .filter(stock -> stock != null)
+                .mapToDouble(Stock::getCost)
+                .min()
+                .orElse(0.0); // Retorna 0 se não houver estoque
     }
 
     /**
@@ -529,6 +583,8 @@ public class Bookmarket {
         Book book = Bookstore.getBook(bookId).orElseThrow(() -> new IllegalArgumentException("Livro com ID " + bookId + " não encontrado."));
 
         Bookstore.addOrUpdateRating(new Rating(customer, book, rating));
+        // Re-inicializa o motor para refletir a nova avaliação
+        initializeRecommendationService();
     }
 
     /**
@@ -730,12 +786,21 @@ public class Bookmarket {
     public static boolean populate(int items, int customers, int addresses,
             int authors, int orders) {
         try {
-            return (Boolean) stateMachine.execute(new PopulateAction(random.nextLong(),
+            boolean result = (Boolean) stateMachine.execute(new PopulateAction(random.nextLong(),
                     System.currentTimeMillis(), items, customers, addresses,
                     authors, orders));
+            if (result) {
+                initializeRecommendationService();
+            }
+            return result;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    private static void initializeRecommendationService() {
+        List<Evaluation> evaluations = Bookstore.getAllEvaluations();
+        recommendationService.initialize(evaluations);
     }
 
     /**

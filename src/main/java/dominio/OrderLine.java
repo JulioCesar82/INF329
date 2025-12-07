@@ -68,6 +68,7 @@ public class OrderLine implements Serializable {
     private final int qty;
     private final double discount;
     private final String comments;
+    private final double price;
 
     /**
      *
@@ -75,12 +76,14 @@ public class OrderLine implements Serializable {
      * @param qty
      * @param discount
      * @param comments
+     * @param price
      */
-    public OrderLine(Book book, int qty, double discount, String comments) {
+    public OrderLine(Book book, int qty, double discount, String comments, double price) {
         this.book = book;
         this.qty = qty;
         this.discount = discount;
         this.comments = comments;
+        this.price = price;
     }
 
     /**
@@ -115,4 +118,11 @@ public class OrderLine implements Serializable {
         return comments;
     }
 
+    /**
+     *
+     * @return
+     */
+    public double getPrice() {
+        return price;
+    }
 }

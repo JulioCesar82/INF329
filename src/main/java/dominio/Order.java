@@ -132,9 +132,10 @@ public class Order implements Serializable {
         this.cc = cc;
         lines = new ArrayList<OrderLine>(cart.getLines().size());
         for (CartLine cartLine : cart.getLines()) {
+            double priceAtPurchase = cartLine.getStock().getCost();
             OrderLine line = new OrderLine(cartLine.getBook(),
                     cartLine.getQty(), customer.getDiscount(),
-                    comment);
+                    comment, priceAtPurchase);
             lines.add(line);
         }
     }

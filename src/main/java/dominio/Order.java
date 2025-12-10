@@ -134,7 +134,7 @@ public class Order implements Serializable {
         for (CartLine cartLine : cart.getLines()) {
             OrderLine line = new OrderLine(cartLine.getBook(),
                     cartLine.getQty(), customer.getDiscount(),
-                    comment);
+                    comment, cartLine.getStock().getCost());
             lines.add(line);
         }
     }

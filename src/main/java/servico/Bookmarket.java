@@ -487,12 +487,17 @@ public class Bookmarket {
             // com base na lista vazia, o que cobre este caso.
         }
 
+        // Verifica se o cliente não possui nenhuma avaliação para decidir sobre o fallback.
+        boolean isNewCustomer = Bookstore.ratings.stream()
+                .noneMatch(rating -> rating.getCustomer().getId() == c_id);
+
         List<Book> recommendedBooks = new ArrayList<>();
-        if (recommendedBookIds.isEmpty()) {
-            // US3/US4-N01 (Fallback): Cliente novo ou sem perfil. Retorna bestsellers.
+        if (recommendedBookIds.isEmpty() && isNewCustomer) {
+            // US3/US4-N01 (Fallback): Apenas para clientes genuinamente novos (sem avaliações).
             List<BestsellerBook> bestsellers = getBestSellerBooks(null, MAX_RECOMMENDATIONS);
             bestsellers.forEach(b -> recommendedBooks.add(b.getBook()));
         } else {
+            // Para usuários existentes, confia no resultado do Mahout, mesmo que seja vazio.
             for (Long bookId : recommendedBookIds) {
                 Bookstore.getBook(bookId.intValue()).ifPresent(recommendedBooks::add);
             }

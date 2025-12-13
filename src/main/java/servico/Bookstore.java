@@ -94,6 +94,8 @@ import dominio.Evaluation;
  */
 public class Bookstore implements Serializable {
 
+    public static final Set<Rating> ratings = new HashSet<>();
+
     private static final long serialVersionUID = -3099048826035606338L;
 
     private static boolean populated;
@@ -104,14 +106,15 @@ public class Bookstore implements Serializable {
     private static final List<Customer> customersById;
     private static final Map<String, Customer> customersByUsername;
     private static final List<Author> authorsById;
-    private static final List<Book> booksById;
-    public static final Set<Rating> ratings = new HashSet<>();
     private final Map<Book, Stock> stockByBook;
     private final List<Cart> cartsById;
+
+    private final int id;
+
+    protected static final List<Book> booksById;
     protected final List<Order> ordersById;
     protected final LinkedList<Order> ordersByCreation;
     
-    private final int id;
 
     /**
     

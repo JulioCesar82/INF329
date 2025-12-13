@@ -99,45 +99,14 @@ public class BookmarketTest {
     }
 
     /**
-     * Test of getPriceBookRecommendationByUsers method, of class Bookmarket.
-     * 
-     * Testa os cenários de recomendação de preço (US3 & US4).
-     *
-     * Este método deve conter os testes para os seguintes cenários de negócio
-     * definidos no `board.pdf`:
-     * <ul>
-     * <li><b>Cenário 1 (US3 - Cliente Regular):</b> Verifica se, para um cliente
-     * regular, os livros recomendados vêm com o preço médio histórico.</li>
-     * <li><b>Cenário 2 (US4 - Assinante):</b> Verifica se, para um assinante,
-     * os livros recomendados vêm com o menor preço de estoque (promocional).</li>
-     * <li><b>Cenário 3 (Fallback):</b> Verifica se, para um cliente novo (sem
-     * avaliações), o sistema retorna a lista de bestsellers.</li>
-     * </ul>
-     */
-    /**
-     * Test of getPriceBookRecommendationByUsers method, of class Bookmarket.
-     * 
-     * Testa os cenários de recomendação de preço (US3 & US4).
-     *
-     * Este método deve conter os testes para os seguintes cenários de negócio
-     * definidos no `board.pdf`:
-     * <ul>
-     * <li><b>Cenário 1 (US3 - Cliente Regular):</b> Verifica se, para um cliente
-     * regular, os livros recomendados vêm com o preço médio histórico.</li>
-     * <li><b>Cenário 2 (US4 - Assinante):</b> Verifica se, para um assinante,
-     * os livros recomendados vêm com o menor preço de estoque (promocional).</li>
-     * <li><b>Cenário 3 (Fallback):</b> Verifica se, para um cliente novo (sem
-     * avaliações), o sistema retorna a lista de bestsellers.</li>
-     * </ul>
+     * Testa o cenário de recomendação para um cliente regular (US3).
+     * Verifica se os livros recomendados vêm com o preço médio histórico de vendas.
      */
     @Test
-    public void testGetPriceBookRecommendationByUsers() {
-        System.out.println("getPriceBookRecommendationByUsers");
-        FakeBookstore fakeBookstore = (FakeBookstore) Bookmarket.getStateMachine().getState().get(0);
-
-        // --- Cenário 1: Teste para Cliente Regular (US3 - Preço Médio) ---
-        System.out.println("Cenário 1: US3 - Cliente Regular");
+    public void testRecommendationForRegularCustomerShouldUseAveragePrice() {
+        System.out.println("US3 - Recommendation with Average Price for Regular Customer");
         // Arrange
+        FakeBookstore fakeBookstore = (FakeBookstore) Bookmarket.getStateMachine().getState().get(0);
         Customer regularCustomer = findRegularCustomer();
         assertNotNull("Nenhum cliente regular (sem desconto) encontrado para o teste.", regularCustomer);
 
@@ -162,9 +131,10 @@ public class BookmarketTest {
         cart2.increaseLine(fakeBookstore.getStock(bookToAverage.getId()), 1);
         Bookmarket.doBuyConfirm(fakeBookstore.getId(), cartId2, regularCustomer.getId(), CreditCards.AMEX, 456L, "Test", new Date(), ShipTypes.AIR);
 
-        Bookmarket.rateBook(regularCustomer.getId(), 1, 5); 
-        Bookmarket.rateBook(1, bookToAverage.getId(), 5); 
-        
+        // Adiciona avaliações para garantir que o cliente não seja "novo"
+        Bookmarket.rateBook(regularCustomer.getId(), 1, 5);
+        Bookmarket.rateBook(1, bookToAverage.getId(), 5);
+
         // Act
         Map<Book, Double> regularRecommendations = Bookmarket.getPriceBookRecommendationByUsers(regularCustomer.getId());
 
@@ -174,10 +144,17 @@ public class BookmarketTest {
             assertEquals("O preço para o cliente regular deve ser a média histórica de vendas.",
                     expectedAverage, regularRecommendations.get(bookToAverage), 0.01);
         }
+    }
 
-        // --- Cenário 2: Teste para Assinante (US4 - Menor Preço) ---
-        System.out.println("Cenário 2: US4 - Assinante");
+    /**
+     * Testa o cenário de recomendação para um cliente assinante (US4).
+     * Verifica se os livros recomendados vêm com o menor preço de estoque (promocional).
+     */
+    @Test
+    public void testRecommendationForSubscriberShouldUsePromotionalPrice() {
+        System.out.println("US4 - Recommendation with Promotional Price for Subscriber");
         // Arrange
+        FakeBookstore fakeBookstore = (FakeBookstore) Bookmarket.getStateMachine().getState().get(0);
         Customer subscriber = findSubscriberCustomer();
         assertNotNull("Nenhum cliente assinante (com desconto) encontrado para o teste.", subscriber);
 
@@ -186,6 +163,7 @@ public class BookmarketTest {
         
         fakeBookstore.updateStock(bookForSubscriber.getId(), promotionalPrice);
 
+        // Adiciona avaliações para garantir que o cliente não seja "novo"
         Bookmarket.rateBook(subscriber.getId(), 10, 5);
         Bookmarket.rateBook(2, bookForSubscriber.getId(), 5);
 
@@ -198,9 +176,15 @@ public class BookmarketTest {
             assertEquals("O preço para o assinante deve ser o menor preço de estoque (promocional).",
                     promotionalPrice, subscriberRecommendations.get(bookForSubscriber), 0.01);
         }
+    }
 
-        // --- Cenário 3: Teste de Fallback para Cliente Novo ---
-        System.out.println("Cenário 3: Fallback para Cliente Novo");
+    /**
+     * Testa o cenário de fallback de recomendação para um cliente novo (sem avaliações).
+     * Verifica se o sistema retorna a lista de bestsellers.
+     */
+    @Test
+    public void testGetPriceBookRecommendationByUsers() {
+        System.out.println("Fallback - Recommendation for New Customer/testRecommendationForNewCustomerShouldFallbackToBestsellers");
         // Arrange
         Customer newCustomer = Bookmarket.createNewCustomer("New", "Fallback", "123 Street", "", "City", "ST", "12345",
                 "United States", "123456789", "new@fallback.com", new Date(), "");
@@ -219,6 +203,139 @@ public class BookmarketTest {
         List<Book> recommendedBooks = new ArrayList<>(fallbackRecommendations.keySet());
         for (int i = 0; i < bestsellers.size(); i++) {
             assertEquals("O livro recomendado deve ser um bestseller.", bestsellers.get(i).getBook(), recommendedBooks.get(i));
+        }
+    }
+
+    /**
+     * Testa o cenário de recomendação quando menos de 5 são possíveis (US3 - P02).
+     * Verifica se o sistema retorna um número menor de recomendações em vez de falhar.
+     */
+    @Test
+    public void testRecommendationWhenLessThanFiveArePossible() {
+        System.out.println("US3 - Recommendation with Insufficient Results");
+        // Arrange
+        Customer customer = findRegularCustomer();
+        assertNotNull("Nenhum cliente regular encontrado para o teste.", customer);
+
+        int totalBooks = FakeBookstore.getBookCount();
+        int booksToLeaveUnrated = 2;
+
+        // Rate almost all books, leaving only a few for recommendation
+        for (int i = 0; i < totalBooks - booksToLeaveUnrated; i++) {
+            Bookmarket.rateBook(customer.getId(), i, 4);
+        }
+
+        // Add one more rating for another user to ensure the recommender has data
+        Bookmarket.rateBook(customer.getId() + 1, 0, 5);
+
+
+        // Act
+        Map<Book, Double> recommendations = Bookmarket.getPriceBookRecommendationByUsers(customer.getId());
+
+        // Assert
+        assertNotNull("O mapa de recomendações não pode ser nulo.", recommendations);
+        assertTrue("Deve haver no máximo o número de livros não avaliados.",
+                recommendations.size() <= booksToLeaveUnrated);
+    }
+
+    /**
+     * Testa se os livros já avaliados por um cliente são excluídos das recomendações (US3 - N02).
+     */
+    @Test
+    public void testRecommendationShouldExcludeRatedBooks() {
+        System.out.println("US3 - Recommendation Excludes Rated Books");
+        // Arrange
+        Customer customer = findRegularCustomer();
+        assertNotNull("Nenhum cliente regular encontrado para o teste.", customer);
+
+        Book ratedBook = Bookstore.getBook(150).get();
+
+        // Rate a specific book
+        Bookmarket.rateBook(customer.getId(), ratedBook.getId(), 5);
+        
+        // Add other ratings to build a profile
+        Bookmarket.rateBook(customer.getId(), 1, 4);
+        Bookmarket.rateBook(customer.getId() + 1, 1, 5);
+        Bookmarket.rateBook(customer.getId() + 1, ratedBook.getId(), 1);
+
+
+        // Act
+        Map<Book, Double> recommendations = Bookmarket.getPriceBookRecommendationByUsers(customer.getId());
+
+        // Assert
+        assertNotNull("O mapa de recomendações não pode ser nulo.", recommendations);
+        assertFalse("O livro já avaliado não deveria estar na lista de recomendações.", 
+                    recommendations.containsKey(ratedBook));
+    }
+
+    /**
+     * Testa o fallback de preço para assinante quando não há preço promocional (US4 - P03).
+     * O preço exibido deve ser o preço de varejo padrão.
+     */
+    @Test
+    public void testSubscriberRecommendationPriceFallback() {
+        System.out.println("US4 - Subscriber Price Fallback to Standard Price");
+        // Arrange
+        FakeBookstore fakeBookstore = (FakeBookstore) Bookmarket.getStateMachine().getState().get(0);
+        Customer subscriber = findSubscriberCustomer();
+        assertNotNull("Nenhum cliente assinante encontrado para o teste.", subscriber);
+        
+        Book bookToRecommend = Bookstore.getBook(300).get();
+        double standardPrice = 35.00;
+
+        // Set a standard price, ensuring no lower promotional price exists for this test
+        fakeBookstore.updateStock(bookToRecommend.getId(), standardPrice);
+
+        // Create a similar user profile to encourage the recommendation
+        Bookmarket.rateBook(subscriber.getId(), 1, 5); // Base rating for subscriber
+        Bookmarket.rateBook(subscriber.getId() + 1, 1, 5); // Similar user has same taste
+        Bookmarket.rateBook(subscriber.getId() + 1, bookToRecommend.getId(), 5); // Similar user likes the target book
+
+        // Act
+        Map<Book, Double> recommendations = Bookmarket.getPriceBookRecommendationByUsers(subscriber.getId());
+
+        // Assert
+        assertNotNull("O mapa de recomendações não pode ser nulo.", recommendations);
+        if (recommendations.containsKey(bookToRecommend)) {
+            assertEquals("O preço deve ser o de varejo padrão quando não há promoção.",
+                    standardPrice, recommendations.get(bookToRecommend), 0.01);
+        }
+    }
+
+    /**
+     * Testa o cálculo de preço para um livro recomendado que nunca foi vendido (US3).
+     * O preço médio de venda deve ser 0.0.
+     */
+    @Test
+    public void testRecommendationForBookWithNoSalesHistory() {
+        System.out.println("US3 - Price for Recommended Book with No Sales History");
+        // Arrange
+        FakeBookstore fakeBookstore = (FakeBookstore) Bookmarket.getStateMachine().getState().get(0);
+        fakeBookstore.clearOrders(); // Isola o teste garantindo que não há histórico de vendas
+
+        Customer customer = findRegularCustomer();
+        assertNotNull("Nenhum cliente regular encontrado para o teste.", customer);
+
+        Book bookWithNoHistory = Bookstore.getBook(400).get();
+
+        // Para encorajar a recomendação, cria um usuário similar que avaliou o livro
+        Customer similarUser = Bookstore.getCustomer(customer.getId() + 1);
+        if (similarUser == null) {
+            similarUser = Bookmarket.createNewCustomer("Similar", "User", "123", "", "City", "ST", "12345", "USA", "123", "similar@user.com", new Date(), "");
+        }
+        
+        Bookmarket.rateBook(customer.getId(), 1, 5); // Garante que o cliente principal tem um perfil
+        Bookmarket.rateBook(similarUser.getId(), 1, 5); // Torna o usuário similar
+        Bookmarket.rateBook(similarUser.getId(), bookWithNoHistory.getId(), 5); // Usuário similar avalia o livro alvo
+
+        // Act
+        Map<Book, Double> recommendations = Bookmarket.getPriceBookRecommendationByUsers(customer.getId());
+
+        // Assert
+        assertNotNull("O mapa de recomendações não pode ser nulo.", recommendations);
+        if (recommendations.containsKey(bookWithNoHistory)) {
+            assertEquals("O preço médio para um livro sem histórico de vendas deve ser 0.0.",
+                    0.0, recommendations.get(bookWithNoHistory), 0.01);
         }
     }
 

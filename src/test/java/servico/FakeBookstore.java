@@ -1,5 +1,7 @@
 package servico;
 
+import static servico.Bookstore.booksById;
+
 /**
  * Uma implementação "fake" da Bookstore para uso em testes.
  * <p>
@@ -20,4 +22,15 @@ public class FakeBookstore extends Bookstore {
         this.ordersById.clear();
         this.ordersByCreation.clear();
     }
+
+    
+    /**
+     * Retorna o número total de livros no sistema.
+     *
+     * @return O número total de livros.
+     */
+    public static int getBookCount() {
+        return booksById.size();
+    }
+
 }

@@ -31,19 +31,6 @@ import java.util.stream.Stream;
 import util.TPCW_Util;
 import dominio.Category;
 import java.lang.Integer;
-import org.apache.mahout.cf.taste.common.TasteException;
-import org.apache.mahout.cf.taste.impl.common.FastByIDMap;
-import org.apache.mahout.cf.taste.impl.model.GenericDataModel;
-import org.apache.mahout.cf.taste.impl.model.GenericUserPreferenceArray;
-import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
-import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
-import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
-import org.apache.mahout.cf.taste.model.DataModel;
-import org.apache.mahout.cf.taste.model.PreferenceArray;
-import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
-import org.apache.mahout.cf.taste.recommender.RecommendedItem;
-import org.apache.mahout.cf.taste.recommender.Recommender;
-import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 
 /**
  * Fachada de serviço principal para o e-commerce BookMarket.
@@ -124,7 +111,14 @@ public class Bookmarket {
         }
     }
 
-    private static Stream<Bookstore> getBookstoreStream() {
+    /**
+     * Obtém um Stream de todas as Bookstores disponíveis.
+     * <p>
+     * Método package-private para permitir acesso do {@link RecommendationService}.
+     *
+     * @return Stream de Bookstores.
+     */
+    static Stream<Bookstore> getBookstoreStream() {
         return (Stream) stateMachine.getStateStream();
     }
 
@@ -460,6 +454,8 @@ public class Bookmarket {
      * <p>
      * O preço exibido para cada livro recomendado é a **média de seu preço de venda
      * histórico**, calculado a partir de todas as {@link OrderLine}s.
+     * <p>
+     * Este método delega a lógica de recomendação para {@link RecommendationService}.
      *
      * @param c_id O ID do cliente para o qual a recomendação será gerada.
      * @return Um {@link Map} onde cada {@link Book} recomendado mapeia para o seu
@@ -471,105 +467,9 @@ public class Bookmarket {
             throw new IllegalArgumentException("Cliente com ID " + c_id + " não encontrado.");
         }
 
-        List<Book> recommendedBooks = getRecommendedBooks(c_id);
-
-        Map<Book, Double> result = new LinkedHashMap<>();
-
-        for (Book book : recommendedBooks) {
-            double averagePrice = calculateHistoricalAveragePrice(book);
-            result.put(book, averagePrice);
-        }
-
-        return result;
+        return RecommendationService.getPriceBookRecommendationByUsers(c_id);
     }
 
-    /**
-     * Calcula o Valor Médio de Venda Histórica para um livro.
-     *
-     * @param book O livro para o qual calcular o valor médio.
-     * @return O valor médio de venda histórica.
-     */
-    private static double calculateHistoricalAveragePrice(Book book) {
-        double totalPrice = 0.0;
-        int totalQty = 0;
-
-        List<Order> allOrders = getBookstoreStream()
-            .flatMap(bookstore -> ((Bookstore) bookstore).getOrdersByCreation().stream())
-            .collect(Collectors.toList());
-
-        for (Order order : allOrders) {
-            for (OrderLine orderLine : order.getLines()) {
-                if (orderLine.getBook().getId() == book.getId()) {
-                    totalPrice += orderLine.getPrice() * orderLine.getQty();
-                    totalQty += orderLine.getQty();
-                }
-            }
-        }
-
-        if (totalQty == 0) {
-            return book.getSrp();
-        }
-
-        return totalPrice / totalQty;
-    }
-
-    /**
-     * Gera recomendações de livros para um cliente usando Apache Mahout.
-     *
-     * @param c_id O ID do cliente.
-     * @return Lista de livros recomendados (até 5).
-     */
-    private static List<Book> getRecommendedBooks(int c_id) {
-        try {
-            DataModel dataModel = buildDataModel();
-
-            UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModel);
-            UserNeighborhood neighborhood = new NearestNUserNeighborhood(10, similarity, dataModel);
-            Recommender recommender = new GenericUserBasedRecommender(dataModel, neighborhood, similarity);
-
-            List<RecommendedItem> recommendations = recommender.recommend(c_id, 5);
-
-            List<Book> recommendedBooks = new ArrayList<>();
-            for (RecommendedItem recommendation : recommendations) {
-                int bookId = (int) recommendation.getItemID();
-                Bookstore.getBook(bookId).ifPresent(recommendedBooks::add);
-            }
-
-            return recommendedBooks;
-        } catch (TasteException e) {
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * Constrói o DataModel do Mahout a partir das avaliações armazenadas.
-     *
-     * @return O DataModel populado.
-     */
-    private static DataModel buildDataModel() {
-        FastByIDMap<PreferenceArray> userData = new FastByIDMap<>();
-
-        Map<Integer, List<Rating>> ratingsByCustomer = Bookstore.ratings.stream()
-            .collect(Collectors.groupingBy(r -> r.getCustomer().getId()));
-
-        for (Map.Entry<Integer, List<Rating>> entry : ratingsByCustomer.entrySet()) {
-            int customerId = entry.getKey();
-            List<Rating> ratings = entry.getValue();
-
-            GenericUserPreferenceArray preferences = new GenericUserPreferenceArray(ratings.size());
-            preferences.setUserID(0, customerId);
-
-            for (int i = 0; i < ratings.size(); i++) {
-                Rating rating = ratings.get(i);
-                preferences.setItemID(i, rating.getBook().getId());
-                preferences.setValue(i, rating.getRating());
-            }
-
-            userData.put(customerId, preferences);
-        }
-
-        return new GenericDataModel(userData);
-    }
 
     /**
      * **US2: Avaliação e Registro de Preferência de Livros.**

@@ -1068,7 +1068,23 @@ public class Bookstore implements Serializable {
         
         // 7. Após o loop, o `DataModel` do Mahout estará populado e pronto para ser
         //    usado pelo `Recommender` em Bookmarket.java.
-        System.out.println(" Done");
+
+        for (int i = 0; i < numEvaluations; i++) {
+            // Get a random customer
+            int randomId = rand.nextInt(customersById.size());
+            Customer randomCustomer = getCustomer(randomId);
+
+            // Get a random book
+            Book randomBook = getABookAnyBook(rand);
+
+            // Generate a random rating between 1 and 5
+            int ratingScore = rand.nextInt(5) + 1;
+
+            // Create a new Rating object
+            addOrUpdateRating(new Rating(randomCustomer, randomBook, ratingScore));
+        }
+        
+        System.out.println("Populate evaluation done.");
     }
 
 }

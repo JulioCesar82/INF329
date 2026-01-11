@@ -7,6 +7,7 @@ import dominio.BestsellerBook;
 import dominio.Cart;
 import dominio.CreditCards;
 import dominio.Customer;
+import dominio.Evaluation;
 import dominio.Order;
 import dominio.OrderLine;
 import dominio.SUBJECTS;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +45,8 @@ import java.lang.Integer;
  * personalizadas.
  * <p>
  * <img src="./doc-files/Bookstore.png" alt="Bookmarket">
- * <br><a href="./doc-files/Bookmarket.html"> code </a>
+ * <br>
+ * <a href="./doc-files/Bookmarket.html"> code </a>
  *
  */
 public class Bookmarket {
@@ -68,7 +71,7 @@ public class Bookmarket {
         void checkpoint() {
 
         }
-        
+
         List<Bookstore> getState() {
             return state;
         }
@@ -88,14 +91,15 @@ public class Bookmarket {
     private class UmbrellaException extends RuntimeException {
 
     }
+
     private static Random random;
     private static StateMachine stateMachine;
+
+    private static RecommendationService recommendationService;
 
     static StateMachine getStateMachine() {
         return stateMachine;
     }
-    
-    
 
     /**
      *
@@ -275,15 +279,9 @@ public class Bookmarket {
      * @return
      */
     public static List<Double> getCosts(Book book) {
-        return getBookstoreStream().
-                map(store -> store.getStock(book.getId())).
-                map(stock -> stock.getCost()).
-                collect(Collectors.toList());
+        return getBookstoreStream().map(store -> store.getStock(book.getId())).map(stock -> stock.getCost())
+                .collect(Collectors.toList());
     }
-
-
-
-
 
     public static Map<Book, Set<Stock>> getBestSellers() {
         return getBestSellers(null, null);
@@ -292,7 +290,7 @@ public class Bookmarket {
     public static Map<Book, Set<Stock>> getBestSellers(SUBJECTS subject) {
         return getBestSellers(subject, null);
     }
-    
+
     public static Map<Book, Set<Stock>> getBestSellers(Category category) {
         return getBestSellers(category, null);
     }
@@ -306,22 +304,19 @@ public class Bookmarket {
 
         // 2. Cria os DTOs e retorna a lista final.
         Map<Book, Set<Stock>> result = new LinkedHashMap<>();
-        
+
         for (BestsellerBook bestsellerBook : bestsellerBooks) {
             Book book = bestsellerBook.getBook();
 
             Set<Stock> stocks = getBookstoreStream()
-                .map(store -> store.getStock(book.getId()))
-                .collect(Collectors.toCollection(() ->
-                new TreeSet<>(Comparator.comparingDouble(Stock::getCost))
-            ));
+                    .map(store -> store.getStock(book.getId()))
+                    .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingDouble(Stock::getCost))));
 
             result.put(book, stocks);
         }
 
         return result;
     }
-                    
 
     /**
      * **US1: Listagem dos Bestsellers.**
@@ -331,7 +326,8 @@ public class Bookmarket {
      * A lógica deve somar a quantidade (`qty`) de cada livro presente em
      * todas as {@link OrderLine}s.
      *
-     * @param limit O número de bestsellers a serem retornados (deve estar entre 1 e 100).
+     * @param limit O número de bestsellers a serem retornados (deve estar entre 1 e
+     *              100).
      * @return Uma lista de {@link BestsellerBook} ordenada pela contagem de vendas.
      * @throws IllegalArgumentException se o limite for inválido.
      */
@@ -346,41 +342,35 @@ public class Bookmarket {
 
         // 1. Agrega a quantidade de vendas por livro.
         Map<Book, Long> salesByBook = getBookstoreStream()
-            .flatMap(bookstore -> ((Bookstore) bookstore).getOrdersByCreation().stream())
-            .flatMap(order -> ((Order) order).getLines().stream())
-            .filter(orderLine -> {
-                if (category == null)
-                    return true;
-                    
-                Book b = orderLine.getBook();
+                .flatMap(bookstore -> ((Bookstore) bookstore).getOrdersByCreation().stream())
+                .flatMap(order -> ((Order) order).getLines().stream())
+                .filter(orderLine -> {
+                    if (category == null)
+                        return true;
 
-                if (category instanceof SUBJECTS)
-                    return b.getSubject() == category;
+                    Book b = orderLine.getBook();
 
-                return false;
-            })
-            .collect(Collectors.groupingBy(
-                    OrderLine::getBook,
-                    Collectors.summingLong(OrderLine::getQty)
-            ));
+                    if (category instanceof SUBJECTS)
+                        return b.getSubject() == category;
+
+                    return false;
+                })
+                .collect(Collectors.groupingBy(
+                        OrderLine::getBook,
+                        Collectors.summingLong(OrderLine::getQty)));
 
         // 2. Cria os DTOs, ordena e retorna a lista final.
         return salesByBook.entrySet().stream()
-            .map(entry -> new BestsellerBook(entry.getKey(), entry.getValue()))
-            .sorted(
-                // Regra de Negócio (US1): Ordenação decrescente por vendas.
-                Comparator.comparingLong(BestsellerBook::getSalesCount).reversed()
-                    // Regra de Negócio (US1 - P04): Empate, ordenação crescente por título.
-                    .thenComparing(b -> b.getBook().getTitle())
-            )
-            // Regra de Negócio (US1): Retornar a quantidade N solicitada.
-            .limit(limit)
-            .collect(Collectors.toList());
+                .map(entry -> new BestsellerBook(entry.getKey(), entry.getValue()))
+                .sorted(
+                        // Regra de Negócio (US1): Ordenação decrescente por vendas.
+                        Comparator.comparingLong(BestsellerBook::getSalesCount).reversed()
+                                // Regra de Negócio (US1 - P04): Empate, ordenação crescente por título.
+                                .thenComparing(b -> b.getBook().getTitle()))
+                // Regra de Negócio (US1): Retornar a quantidade N solicitada.
+                .limit(limit)
+                .collect(Collectors.toList());
     }
-
-
-
-
 
     /**
      *
@@ -388,8 +378,9 @@ public class Bookmarket {
      * @return
      *
      * @deprecated A recomendação baseada em itens não faz parte dos requisitos
-     * definidos no `board.pdf`. A lógica de negócio está focada em
-     * {@link #getPriceBookRecommendationByUsers(int)}. Este método é obsoleto.
+     *             definidos no `board.pdf`. A lógica de negócio está focada em
+     *             {@link #getPriceBookRecommendationByUsers(int)}. Este método é
+     *             obsoleto.
      *
      * @param c_id O ID do cliente.
      * @return null.
@@ -405,8 +396,8 @@ public class Bookmarket {
      * @return
      *
      * @deprecated A lógica de recomendação foi consolidada em
-     * {@link #getPriceBookRecommendationByUsers(int)}. Este método é um
-     * pass-through obsoleto e será removido em futuras versões.
+     *             {@link #getPriceBookRecommendationByUsers(int)}. Este método é um
+     *             pass-through obsoleto e será removido em futuras versões.
      *
      * @param c_id O ID do cliente.
      * @return null.
@@ -424,16 +415,19 @@ public class Bookmarket {
      * @return
      * 
      * @deprecated A lógica de recomendação foi consolidada em
-     * {@link #getPriceBookRecommendationByUsers(int)}, que retorna o preço
-     * calculado em vez do objeto de estoque. Utilize o outro método para
-     * implementar a lógica das US3 e US4.
+     *             {@link #getPriceBookRecommendationByUsers(int)}, que retorna o
+     *             preço
+     *             calculado em vez do objeto de estoque. Utilize o outro método
+     *             para
+     *             implementar a lógica das US3 e US4.
      *
      * @param c_id O ID do cliente.
      * @return Um mapa de livros para seus estoques.
      */
     @Deprecated
     public static Map<Book, Set<Stock>> getStocksRecommendationByUsers(int c_id) {
-        // TODO: A lógica principal de recomendação está em getPriceBookRecommendationByUsers.
+        // TODO: A lógica principal de recomendação está em
+        // getPriceBookRecommendationByUsers.
         // Este método não é mais necessário para os requisitos atuais.
         return null;
     }
@@ -446,74 +440,144 @@ public class Bookmarket {
      * @param c_id
      * @return
      * 
-     * **US3 & US4: Sugestão de Livros para Clientes Regulares e Assinantes.**
-     * <p>
-     * Gera uma lista de 5 livros recomendados para um determinado cliente e calcula
-     * o preço a ser exibido com base no seu perfil (Regular vs. Assinante).
-     * <p>
-     * A lógica de negócio se divide em dois casos:
-     * <ul>
-     * <li><b>US3 - Cliente Regular:</b> Para clientes com `discount == 0`, o preço
-     * exibido para cada livro recomendado deve ser a **média de seu preço de venda
-     * histórico**, calculado a partir de todas as {@link OrderLine}s.</li>
-     * <li><b>US4 - Assinante:</b> Para clientes com `discount > 0`, o preço
-     * exibido deve ser o **menor valor promocional disponível** para o livro
-     * naquele momento, obtido do {@link Stock}.</li>
-     * </ul>
+     *         **US3 & US4: Sugestão de Livros para Clientes Regulares e
+     *         Assinantes.**
+     *         <p>
+     *         Gera uma lista de 5 livros recomendados para um determinado cliente e
+     *         calcula
+     *         o preço a ser exibido com base no seu perfil (Regular vs. Assinante).
+     *         <p>
+     *         A lógica de negócio se divide em dois casos:
+     *         <ul>
+     *         <li><b>US3 - Cliente Regular:</b> Para clientes com `discount == 0`,
+     *         o preço
+     *         exibido para cada livro recomendado deve ser a **média de seu preço
+     *         de venda
+     *         histórico**, calculado a partir de todas as {@link OrderLine}s.</li>
+     *         <li><b>US4 - Assinante:</b> Para clientes com `discount > 0`, o preço
+     *         exibido deve ser o **menor valor promocional disponível** para o
+     *         livro
+     *         naquele momento, obtido do {@link Stock}.</li>
+     *         </ul>
      *
      * @param c_id O ID do cliente para o qual a recomendação será gerada.
      * @return Um {@link Map} onde cada {@link Book} recomendado mapeia para o seu
-     * preço calculado ({@code Double}).
+     *         preço calculado ({@code Double}).
      */
     public static Map<Book, Double> getPriceBookRecommendationByUsers(int c_id) {
         // TODO: Implementar a lógica das US3 e US4.
         // 1. Obter o cliente (Customer) usando `Bookstore.getCustomer(c_id)`.
+
         //
         // 2. Gerar a lista de livros recomendados (ex: 5 livros).
-        //    - A lógica de recomendação (ex: usando Mahout ou outra estratégia) deve ser implementada aqui.
-        //    - Para este guia, vamos assumir que uma `List<Book> recommendedBooks` foi gerada.
+        // - A lógica de recomendação (ex: usando Mahout ou outra estratégia) deve ser
+        // implementada aqui.
+        // - Para este guia, vamos assumir que uma `List<Book> recommendedBooks` foi
+        // gerada.
         //
         // 3. Verificar o tipo de cliente.
-        //    boolean isSubscriber = customer.getDiscount() > 0;
+        // boolean isSubscriber = customer.getDiscount() > 0;
         //
         // 4. Criar o mapa de resultado: `Map<Book, Double> result = new HashMap<>();`
         //
         // 5. Iterar sobre cada `book` em `recommendedBooks`.
-        //    - IF (isSubscriber) -> Lógica da US4:
-        //        a. Obter o `Stock` do livro a partir de `Bookstore.stockByBook`.
-        //        b. Obter o preço promocional (`stock.getCost()`).
-        //        c. Adicionar ao mapa: `result.put(book, stock.getCost());`
+        // - IF (isSubscriber) -> Lógica da US4:
+        // a. Obter o `Stock` do livro a partir de `Bookstore.stockByBook`.
+        // b. Obter o preço promocional (`stock.getCost()`).
+        // c. Adicionar ao mapa: `result.put(book, stock.getCost());`
         //
-        //    - ELSE -> Lógica da US3:
-        //        a. Calcular o preço médio histórico do livro. Para isso, é preciso:
-        //        b. Iterar por todas as `Order` em `Bookstore.ordersByCreation`.
-        //        c. Dentro de cada ordem, iterar pelas `OrderLine`s.
-        //        d. Se a `orderLine.getBook().getId()` for igual ao `book.getId()`,
-        //           somar o `orderLine.getPrice()` e contar a `orderLine.getQty()`.
-        //        e. Calcular a média: `totalPrice / totalQty`.
-        //        f. Adicionar ao mapa: `result.put(book, averagePrice);`
+        // - ELSE -> Lógica da US3:
+        // a. Calcular o preço médio histórico do livro. Para isso, é preciso:
+        // b. Iterar por todas as `Order` em `Bookstore.ordersByCreation`.
+        // c. Dentro de cada ordem, iterar pelas `OrderLine`s.
+        // d. Se a `orderLine.getBook().getId()` for igual ao `book.getId()`,
+        // somar o `orderLine.getPrice()` e contar a `orderLine.getQty()`.
+        // e. Calcular a média: `totalPrice / totalQty`.
+        // f. Adicionar ao mapa: `result.put(book, averagePrice);`
         //
         // 6. Retornar o `result`.
-        return null;
+
+        // Get the customer by ID
+        Customer customer = Bookstore.getCustomer(c_id);
+
+        // Get 5 book recommendations for this customer
+        List<Long> recommendedBookIds = recommendationService.getRecommendations(c_id, 5);
+
+        // Determine if the customer is a subscriber
+        boolean isSubscriber = customer.getDiscount() > 0;
+
+        // Create result map
+        Map<Book, Double> result = new HashMap<>();
+
+        // Process each recommended book
+        for (Long bookId : recommendedBookIds) {
+            Book book = Bookstore.getBook(bookId.intValue()).orElse(null);
+            if (book == null) {
+                continue; // Skip if book not found
+            }
+            if (isSubscriber) {
+                // US4: Subscriber - Get the lowest promotional price from Stock
+                List<Stock> stocks = getStocks(bookId.intValue());
+
+                // Find the minimum price
+                double minPrice = stocks.stream()
+                        .mapToDouble(Stock::getCost)
+                        .min()
+                        .orElse(0.0);
+
+                result.put(book, minPrice);
+            } else {
+                // US3: Regular Customer - Calculate average historical price
+                double totalPrice = 0.0;
+                int totalQty = 0;
+
+                // Loop through all bookstores and their orders
+                for (Bookstore bookstore : stateMachine.getState()) {
+                    for (Order order : bookstore.getOrdersByCreation()) {
+                        for (OrderLine line : order.getLines()) {
+                            if (line.getBook().getId() == bookId.intValue()) {
+                                // Get the stock to find the price
+                                Stock stock = bookstore.getStock(line.getBook().getId());
+                                if (stock != null) {
+                                    totalPrice += stock.getCost() * line.getQty();
+                                    totalQty += line.getQty();
+                                }
+                            }
+                        }
+                    }
+                }
+                // Calculate average
+                double averagePrice = totalQty > 0 ? totalPrice / totalQty : 0.0;
+                result.put(book, averagePrice);
+            }
+
+        }
+
+        return result;
     }
 
     /**
      * **US2: Avaliação e Registro de Preferência de Livros.**
      * <p>
-     * Registra ou atualiza a avaliação (rating) de um livro para um cliente específico.
+     * Registra ou atualiza a avaliação (rating) de um livro para um cliente
+     * específico.
      * A lógica segue as seguintes regras de negócio:
      * <ul>
-     *   <li><b>Validação de Entradas:</b> Garante que o cliente e o livro existem. Lança
-     *   {@code IllegalArgumentException} se não forem encontrados.</li>
-     *   <li><b>Validação da Nota:</b> A nota deve estar entre 1 e 5 (inclusive). Lança
-     *   {@code IllegalArgumentException} para valores fora desse intervalo.</li>
-     *   <li><b>Armazenamento:</b> A avaliação é armazenada na coleção de ratings do Bookstore.
-     *   Se já existir uma avaliação para o mesmo cliente e livro, ela é atualizada.</li>
+     * <li><b>Validação de Entradas:</b> Garante que o cliente e o livro existem.
+     * Lança
+     * {@code IllegalArgumentException} se não forem encontrados.</li>
+     * <li><b>Validação da Nota:</b> A nota deve estar entre 1 e 5 (inclusive).
+     * Lança
+     * {@code IllegalArgumentException} para valores fora desse intervalo.</li>
+     * <li><b>Armazenamento:</b> A avaliação é armazenada na coleção de ratings do
+     * Bookstore.
+     * Se já existir uma avaliação para o mesmo cliente e livro, ela é
+     * atualizada.</li>
      * </ul>
      *
      * @param customerId O ID do cliente que está fazendo a avaliação.
-     * @param bookId O ID do livro a ser avaliado.
-     * @param rating A nota atribuída ao livro (deve ser entre 1 e 5).
+     * @param bookId     O ID do livro a ser avaliado.
+     * @param rating     A nota atribuída ao livro (deve ser entre 1 e 5).
      * @throws IllegalArgumentException se o cliente, livro ou nota forem inválidos.
      */
     public static void rateBook(int customerId, int bookId, int rating) {
@@ -526,7 +590,8 @@ public class Bookmarket {
             throw new IllegalArgumentException("Cliente com ID " + customerId + " não encontrado.");
         }
 
-        Book book = Bookstore.getBook(bookId).orElseThrow(() -> new IllegalArgumentException("Livro com ID " + bookId + " não encontrado."));
+        Book book = Bookstore.getBook(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Livro com ID " + bookId + " não encontrado."));
 
         Bookstore.addOrUpdateRating(new Rating(customer, book, rating));
     }
@@ -988,8 +1053,42 @@ public class Bookmarket {
          */
         @Override
         public Object executeOnBookstore(Stream<Bookstore> bookstore) {
-            return bookstore.filter(bs -> bs.getId() == this.storeId).findFirst().get().cartUpdate(cId, bId, bIds, quantities, now);
+            return bookstore.filter(bs -> bs.getId() == this.storeId).findFirst().get().cartUpdate(cId, bId, bIds,
+                    quantities, now);
         }
+    }
+
+    /**
+     * Initializes the recommendation service with evaluation data from ratings.
+     * This should be called after the system is populated with data.
+     */
+    public static void initializeRecommendationService() {
+        // Create an instance of RecommendationService
+        recommendationService = new RecommendationService();
+
+        // Get all ratings from Bookstore
+        Set<Rating> allRatings = Bookstore.ratings;
+
+        // Convert Rating objects to Evaluation objects
+        List<Evaluation> evaluations = new ArrayList<>();
+        for (Rating rating : allRatings) {
+            Evaluation eval = ratingToEvaluation(rating);
+            evaluations.add(eval);
+        }
+
+        // Initialize the recommendation service with the evaluations
+        recommendationService.initialize(evaluations);
+
+        System.out.println("Recommendation service initialized with " + evaluations.size() + " evaluations.");
+    }
+
+    public static Evaluation ratingToEvaluation(Rating rating) {
+        long userId = rating.getCustomer().getId();
+        long bookId = rating.getBook().getId();
+        float bookRating = (float) rating.getRating();
+
+        return new Evaluation(userId, bookId, bookRating);
+
     }
 
     /**
@@ -1050,7 +1149,8 @@ public class Bookmarket {
          */
         @Override
         public Object executeOnBookstore(Stream<Bookstore> bookstore) {
-            return bookstore.filter(bs -> bs.getId() == this.storeId).findFirst().get().confirmBuy(customerId, cartId, comment, ccType,
+            return bookstore.filter(bs -> bs.getId() == this.storeId).findFirst().get().confirmBuy(customerId, cartId,
+                    comment, ccType,
                     ccNumber, ccName, ccExpiry, shipping, shippingDate,
                     addressId, now);
         }
@@ -1099,9 +1199,17 @@ public class Bookmarket {
          */
         @Override
         public Object executeOnBookstore(Stream<Bookstore> bookstore) {
+            /**
+             * After
+             * 
+             */
             Bookstore.populate(seed, now, items, customers, addresses, authors);
             Random rand = new Random(seed);
             bookstore.forEach(instance -> instance.populateInstanceBookstore(orders, rand, now));
+
+            // Initialize recommendation service after all data is populated
+            initializeRecommendationService();
+
             return true;
         }
     }

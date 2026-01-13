@@ -454,20 +454,78 @@ public class Bookmarket {
      * <p>
      * O preço exibido para cada livro recomendado é a **média de seu preço de venda
      * histórico**, calculado a partir de todas as {@link OrderLine}s.
-     * <p>
-     * Este método delega a lógica de recomendação para {@link RecommendationService}.
      *
      * @param c_id O ID do cliente para o qual a recomendação será gerada.
      * @return Um {@link Map} onde cada {@link Book} recomendado mapeia para o seu
      * Valor Médio de Venda Histórica ({@code Double}).
      */
     public static Map<Book, Double> getPriceBookRecommendationByUsers(int c_id) {
+        return getPriceBookRecommendationByUsers(c_id, 5);
+    }
+
+    /**
+     * **US3: Sugestão de Livros para Clientes Regulares (Valor Médio).**
+     * <p>
+     * Gera uma lista de livros recomendados para um determinado cliente e calcula
+     * o Valor Médio de Venda Histórica para cada livro.
+     * <p>
+     * O preço exibido para cada livro recomendado é a **média de seu preço de venda
+     * histórico**, calculado a partir de todas as {@link OrderLine}s.
+     *
+     * @param c_id O ID do cliente para o qual a recomendação será gerada.
+     * @param numBooks O número de livros a recomendar (default: 5).
+     * @return Um {@link Map} onde cada {@link Book} recomendado mapeia para o seu
+     * Valor Médio de Venda Histórica ({@code Double}).
+     */
+    public static Map<Book, Double> getPriceBookRecommendationByUsers(int c_id, int numBooks) {
         Customer customer = Bookstore.getCustomer(c_id);
         if (customer == null) {
             throw new IllegalArgumentException("Cliente com ID " + c_id + " não encontrado.");
         }
 
-        return RecommendationService.getPriceBookRecommendationByUsers(c_id);
+        List<Book> recommendedBooks = RecommendationService.getRecommendedBooks(c_id, numBooks);
+
+        Map<Book, Double> result = new LinkedHashMap<>();
+        for (Book book : recommendedBooks) {
+            double averagePrice = calculateHistoricalAveragePrice(book);
+            result.put(book, averagePrice);
+        }
+
+        return result;
+    }
+
+    /**
+     * Calcula o Valor Médio de Venda Histórica para um livro.
+     * <p>
+     * O cálculo é feito somando (preço × quantidade) de todas as {@link OrderLine}s
+     * que contêm este livro e dividindo pela quantidade total vendida.
+     *
+     * @param book O livro para o qual calcular o valor médio.
+     * @return O valor médio de venda histórica. Se o livro nunca foi vendido,
+     *         retorna o SRP (Suggested Retail Price) do livro.
+     */
+    public static double calculateHistoricalAveragePrice(Book book) {
+        double totalPrice = 0.0;
+        int totalQty = 0;
+
+        List<Order> allOrders = getBookstoreStream()
+            .flatMap(bookstore -> bookstore.getOrdersByCreation().stream())
+            .collect(Collectors.toList());
+
+        for (Order order : allOrders) {
+            for (OrderLine orderLine : order.getLines()) {
+                if (orderLine.getBook().getId() == book.getId()) {
+                    totalPrice += orderLine.getPrice() * orderLine.getQty();
+                    totalQty += orderLine.getQty();
+                }
+            }
+        }
+
+        if (totalQty == 0) {
+            return book.getSrp();
+        }
+
+        return totalPrice / totalQty;
     }
 
 

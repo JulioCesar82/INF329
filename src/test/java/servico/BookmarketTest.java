@@ -339,6 +339,67 @@ public class BookmarketTest {
             assertEquals("A ordem dos livros no mapa deve corresponder à ordem dos best-sellers.",
                          expectedOrder.get(i).getBook(), actualOrder.get(i));
         }
+
+
+
+    }
+
+    @Test
+    public void testGetBestsellers_OnlyShippedOrdersAreConsidered() {
+        System.out.println("getBestSellers_OnlyShippedOrdersAreConsidered");
+
+        // Arrange
+        Bookmarket.getStateMachine().getState()
+                .forEach(bookstore -> ((FakeBookstore) bookstore).clearOrders());
+
+        Book book = Bookstore.getBook(1).get();
+        Customer customer = Bookstore.getCustomer(1);
+
+        // Order SHIPPED (deve contar)
+        int cartId1 = Bookmarket.createEmptyCart(0);
+        Cart cart1 = Bookmarket.getCart(0, cartId1);
+        cart1.increaseLine(Bookmarket.getStock(0, book.getId()), 10);
+
+        Order shippedOrder = Bookmarket.doBuyConfirm(
+                0, cartId1, customer.getId(),
+                CreditCards.VISA, 1234567890123456L,
+                customer.getFname(), new Date(), ShipTypes.AIR
+        );
+        shippedOrder.setStatus(StatusTypes.SHIPPED);
+
+        // Order NÃO SHIPPED (não deve contar)
+        int cartId2 = Bookmarket.createEmptyCart(0);
+        Cart cart2 = Bookmarket.getCart(0, cartId2);
+        cart2.increaseLine(Bookmarket.getStock(0, book.getId()), 20);
+
+        Order notShippedOrder = Bookmarket.doBuyConfirm(
+                0, cartId2, customer.getId(),
+                CreditCards.VISA, 1234567890123456L,
+                customer.getFname(), new Date(), ShipTypes.AIR
+        );
+        notShippedOrder.setStatus(StatusTypes.PENDING);
+
+        // Act
+        Map<Book, Set<Stock>> bestsellers = Bookmarket.getBestSellers();
+
+        // Assert
+        assertNotNull("O mapa de bestsellers não pode ser nulo.", bestsellers);
+        assertTrue("O livro deve aparecer como bestseller.", bestsellers.containsKey(book));
+
+        List<BestsellerBook> bestsellerBooks = Bookmarket.getBestSellerBooks(null, 50);
+        BestsellerBook bestseller = bestsellerBooks.stream()
+                .filter(b -> b.getBook().equals(book))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull("O bestseller deve existir.", bestseller);
+
+        // Apenas a order SHIPPED (10 unidades) deve ser considerada
+        assertEquals(
+                "Somente orders com status SHIPPED devem ser consideradas no cálculo.",
+                10,
+                bestseller.getSalesCount()
+        );
     }
 
     @Test

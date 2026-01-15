@@ -10,6 +10,7 @@ import dominio.Order;
 import dominio.OrderLine;
 import dominio.SUBJECTS;
 import dominio.ShipTypes;
+import dominio.StatusTypes;
 import dominio.Stock;
 import java.util.ArrayList;
 import java.util.List;
@@ -202,7 +203,7 @@ public class BookmarketTest {
      * A ordenação secundária por título (alfabética) deve ser aplicada.
      */
     @Test
-    public void testGetBestsellers_WithTies() {
+    public void testGetBestSellers_WithTies() {
         System.out.println("getBestsellers_WithTies");
         // Arrange: Força um empate entre dois livros
         // Limpa o histórico de vendas para isolar o teste
@@ -212,8 +213,8 @@ public class BookmarketTest {
         Book book1 = Bookstore.getBook(1).get(); // "THE ROAD TO RICHES"
         Book book2 = Bookstore.getBook(2).get(); // "THE TALE OF TWO CITIES"
         
-        // Garante que book1 vem antes de book2 alfabeticamente
-        assertTrue(book1.getTitle().compareTo(book2.getTitle()) < 0);
+        // // Garante que book1 vem antes de book2 alfabeticamente
+        // assertTrue(book1.getTitle().compareTo(book2.getTitle()) < 0);
 
         // Cria um carrinho e adiciona os livros
         int cartId = Bookmarket.createEmptyCart(0);
@@ -221,29 +222,38 @@ public class BookmarketTest {
         cart.increaseLine(Bookmarket.getStock(0, book1.getId()), 10);
         cart.increaseLine(Bookmarket.getStock(0, book2.getId()), 10);
 
+        
+        System.out.println("#################1");
+        System.out.println(book1.getTitle());
+        System.out.println(book2.getTitle());
+
         // Confirma a compra para gerar a ordem
         Customer customer = Bookstore.getCustomer(1);
-        Bookmarket.doBuyConfirm(0, cartId, customer.getId(), CreditCards.VISA, 1234567890123456L,
+        Order order = Bookmarket.doBuyConfirm(0, cartId, customer.getId(), CreditCards.VISA, 1234567890123456L,
                 customer.getFname(), new Date(), ShipTypes.AIR);
 
-        // Act
-        List<BestsellerBook> bestsellers = Bookmarket.getBestSellerBooks(null, 5);
+        order.setStatus(StatusTypes.SHIPPED);
 
-        // Assert
-        BestsellerBook bestseller1 = bestsellers.stream().filter(b -> b.getBook().getId() == book1.getId()).findFirst().orElse(null);
-        BestsellerBook bestseller2 = bestsellers.stream().filter(b -> b.getBook().getId() == book2.getId()).findFirst().orElse(null);
+         // Act → pede APENAS 1 bestseller
+         List<BestsellerBook> bestsellers = Bookmarket.getBestSellerBooks(null, 1);  
 
-        assertNotNull(bestseller1);
-        assertNotNull(bestseller2);
-        // Com o histórico limpo, a contagem de vendas deve ser exatamente 10 para ambos.
-        assertEquals(10, bestseller1.getSalesCount());
-        assertEquals(10, bestseller2.getSalesCount());
+        // Assert → deve retornar APENAS 1 bestseller
+        assertNotNull(bestsellers);
+        assertEquals("Deve retornar apenas 1 bestseller", 1, bestsellers.size());
 
-        // Encontra os índices dos livros na lista para verificar a ordem
-        int index1 = bestsellers.indexOf(bestseller1);
-        int index2 = bestsellers.indexOf(bestseller2);
+        BestsellerBook result = bestsellers.get(0);
 
-        assertTrue("Com contagens de vendas iguais, o livro com título alfabeticamente anterior deve vir primeiro.", index1 < index2);
+        // Descobre qual título deveria ganhar pelo critério alfabético
+        Book expectedBook =
+        book1.getTitle().compareTo(book2.getTitle()) < 0 ? book1 : book2;
+
+        assertEquals(
+        "Em caso de empate, deve retornar o livro com título alfabeticamente menor",
+        expectedBook.getId(),
+        result.getBook().getId()
+        );
+
+        assertEquals(10, result.getSalesCount());
     }
 
     /**
@@ -363,32 +373,49 @@ public class BookmarketTest {
         Bookmarket.getStateMachine().getState()
                 .forEach(bookstore -> ((FakeBookstore) bookstore).clearOrders());
 
-        Book book1 = Bookstore.getBook(1).get(); // "THE ROAD TO RICHES"
-        Book book2 = Bookstore.getBook(2).get(); // "THE TALE OF TWO CITIES"
-        
-        assertTrue(book1.getTitle().compareTo(book2.getTitle()) < 0);
+        Book book1 = Bookstore.getBook(1).get();
+        Book book2 = Bookstore.getBook(2).get(); 
 
         int cartId = Bookmarket.createEmptyCart(0);
         Cart cart = Bookmarket.getCart(0, cartId);
+
         cart.increaseLine(Bookmarket.getStock(0, book1.getId()), 10);
         cart.increaseLine(Bookmarket.getStock(0, book2.getId()), 10);
 
         Customer customer = Bookstore.getCustomer(1);
-        Bookmarket.doBuyConfirm(0, cartId, customer.getId(), CreditCards.VISA, 1234567890123456L,
+        Order order = Bookmarket.doBuyConfirm(0, cartId, customer.getId(), CreditCards.VISA, 1234567890123456L,
                 customer.getFname(), new Date(), ShipTypes.AIR);
 
+        order.setStatus(StatusTypes.SHIPPED);
+
         // Act
-        Map<Book, Set<Stock>> bestsellersMap = Bookmarket.getBestSellers(null, 5);
+        Map<Book, Set<Stock>> bestsellersMap = Bookmarket.getBestSellers(null, 2);
         List<Book> books = new ArrayList<>(bestsellersMap.keySet());
 
         // Assert
         assertTrue("O mapa de best-sellers deve conter ambos os livros.",
                    bestsellersMap.containsKey(book1) && bestsellersMap.containsKey(book2));
 
-        int index1 = books.indexOf(book1);
-        int index2 = books.indexOf(book2);
+        // Assert — presença
+        assertEquals("Devem existir dois bestsellers", 2, books.size());
+        assertTrue(bestsellersMap.containsKey(book1));
+        assertTrue(bestsellersMap.containsKey(book2));
 
-        assertTrue("Com contagens de vendas iguais, o livro com título alfabeticamente anterior deve vir primeiro no mapa.", index1 < index2);
+                // Assert — ordem alfabética
+        Book expectedFirst =book1.getTitle().compareTo(book2.getTitle()) < 0 ? book1 : book2;
+        Book expectedSecond = expectedFirst == book1 ? book2 : book1;
+
+        assertEquals(
+            "Primeiro livro deve ser o alfabeticamente menor",
+            expectedFirst.getId(),
+            books.get(0).getId()
+        );
+
+        assertEquals(
+            "Segundo livro deve ser o alfabeticamente maior",
+            expectedSecond.getId(),
+            books.get(1).getId()
+        );
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -501,7 +528,7 @@ public class BookmarketTest {
         System.out.println("rateBook: non-existent book scenario");
         // Arrange
         int customerId = 13;
-        int nonExistentBookId = 9999; // ID de livro que sabidamente não existe
+        int nonExistentBookId = 9923999; // ID de livro que sabidamente não existe
         int ratingValue = 4;
 
         // Act

@@ -74,7 +74,7 @@ public class Order implements Serializable {
     private final double total;
     private final ShipTypes shipType;
     private final Date shipDate;
-    private StatusTypes status; //Status não pode ser final se a order altera a sua condição.
+    protected StatusTypes status;
     private final Address billingAddress;
     private final Address shippingAddress;
     private final CCTransaction cc;
@@ -245,12 +245,5 @@ public class Order implements Serializable {
 
 
 
-    /**
-     * Define o status do pedido.
-     *
-     * @param status o novo status do pedido
-     */
-    public void setStatus(StatusTypes status) {
-        this.status = status;
-    }
+
 }

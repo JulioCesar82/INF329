@@ -3,11 +3,12 @@ package servico;
 import dominio.Book;
 import dominio.BestsellerBook;
 import dominio.Cart;
-import dominio.Rating;
 import dominio.CreditCards;
 import dominio.Customer;
+import dominio.FakeOrder;
 import dominio.Order;
 import dominio.OrderLine;
+import dominio.Rating;
 import dominio.SUBJECTS;
 import dominio.ShipTypes;
 import dominio.StatusTypes;
@@ -232,7 +233,7 @@ public class BookmarketTest {
         Order order = Bookmarket.doBuyConfirm(0, cartId, customer.getId(), CreditCards.VISA, 1234567890123456L,
                 customer.getFname(), new Date(), ShipTypes.AIR);
 
-        order.setStatus(StatusTypes.SHIPPED);
+        ((FakeOrder) order).setStatus(StatusTypes.SHIPPED);
 
          // Act → pede APENAS 1 bestseller
          List<BestsellerBook> bestsellers = Bookmarket.getBestSellerBooks(null, 1);  
@@ -365,7 +366,7 @@ public class BookmarketTest {
                 CreditCards.VISA, 1234567890123456L,
                 customer.getFname(), new Date(), ShipTypes.AIR
         );
-        shippedOrder.setStatus(StatusTypes.SHIPPED);
+        ((FakeOrder) shippedOrder).setStatus(StatusTypes.SHIPPED);
 
         // Order NÃO SHIPPED (não deve contar)
         int cartId2 = Bookmarket.createEmptyCart(0);
@@ -377,7 +378,7 @@ public class BookmarketTest {
                 CreditCards.VISA, 1234567890123456L,
                 customer.getFname(), new Date(), ShipTypes.AIR
         );
-        notShippedOrder.setStatus(StatusTypes.PENDING);
+        ((FakeOrder) notShippedOrder).setStatus(StatusTypes.PENDING);
 
         // Act
         Map<Book, Set<Stock>> bestsellers = Bookmarket.getBestSellers();
@@ -447,7 +448,7 @@ public class BookmarketTest {
         Order order = Bookmarket.doBuyConfirm(0, cartId, customer.getId(), CreditCards.VISA, 1234567890123456L,
                 customer.getFname(), new Date(), ShipTypes.AIR);
 
-        order.setStatus(StatusTypes.SHIPPED);
+        ((FakeOrder) order).setStatus(StatusTypes.SHIPPED);
 
         // Act
         Map<Book, Set<Stock>> bestsellersMap = Bookmarket.getBestSellers(null, 2);

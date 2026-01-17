@@ -85,6 +85,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import dominio.Evaluation;
 
 /**
  * <img src="./doc-files/Bookstore.png" alt="Bookstore">
@@ -92,6 +93,8 @@ import java.util.stream.Collectors;
  *
  */
 public class Bookstore implements Serializable {
+
+    public static final Set<Rating> ratings = new HashSet<>();
 
     private static final long serialVersionUID = -3099048826035606338L;
 
@@ -103,14 +106,15 @@ public class Bookstore implements Serializable {
     private static final List<Customer> customersById;
     private static final Map<String, Customer> customersByUsername;
     private static final List<Author> authorsById;
-    private static final List<Book> booksById;
-    public static final Set<Rating> ratings = new HashSet<>();
     private final Map<Book, Stock> stockByBook;
     private final List<Cart> cartsById;
+
+    private final int id;
+
+    protected static final List<Book> booksById;
     protected final List<Order> ordersById;
     protected final LinkedList<Order> ordersByCreation;
     
-    private final int id;
 
     /**
     
@@ -436,6 +440,25 @@ public class Bookstore implements Serializable {
      */
     public static Rating getRating(int customerId, int bookId) {
         return ratings.stream().filter(r -> r.getCustomer().getId() == customerId && r.getBook().getId() == bookId).findFirst().orElse(null);
+    }
+
+    /**
+     * Retorna todas as avaliações do sistema convertidas para o DTO Evaluation.
+     * <p>
+     * Este método serve como uma camada de mapeamento para alimentar o motor de
+     * recomendação, desacoplando o domínio interno da representação de dados
+     * esperada pelo Mahout.
+     *
+     * @return Uma lista de {@link Evaluation}.
+     */
+    public static List<Evaluation> getAllEvaluations() {
+        return ratings.stream()
+                .map(rating -> new Evaluation(
+                        rating.getCustomer().getId(),
+                        rating.getBook().getId(),
+                        rating.getRating()
+                ))
+                .collect(Collectors.toList());
     }
 
     List<Book> getNewBooks1(SUBJECTS subject) {

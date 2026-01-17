@@ -749,13 +749,39 @@ public class Bookstore implements Serializable {
             StatusTypes status, Address billingAddress, Address shippingAddress,
             CCTransaction cc) {
         int idOrder = ordersById.size();
-        Order order = new Order(idOrder, customer, date, cart, comment, shipType,
+        Order order = newOrderInstance(idOrder, customer, date, cart, comment, shipType,
                 shipDate, status, billingAddress, shippingAddress, cc);
         ordersById.add(order);
         ordersByCreation.addFirst(order);
         customer.logOrder(order);
         cart.clear();
         return order;
+    }
+
+    protected Order newOrderInstance(
+        int idOrder,
+        Customer customer,
+        Date date,
+        Cart cart,
+        String comment,
+        ShipTypes shipType,
+        Date shipDate,
+        StatusTypes status,
+        Address billingAddress,
+        Address shippingAddress,
+        CCTransaction cc) {
+            return new Order(
+                idOrder,
+                customer,
+                date,
+                cart,
+                comment,
+                shipType,
+                shipDate,
+                status,
+                billingAddress,
+                shippingAddress,
+                cc);
     }
 
     private static Random rand;

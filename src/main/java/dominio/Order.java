@@ -74,7 +74,7 @@ public class Order implements Serializable {
     private final double total;
     private final ShipTypes shipType;
     private final Date shipDate;
-    private final StatusTypes status;
+    protected StatusTypes status;
     private final Address billingAddress;
     private final Address shippingAddress;
     private final CCTransaction cc;
@@ -243,5 +243,4 @@ public class Order implements Serializable {
     public ArrayList<OrderLine> getLines() {
         return lines;
     }
-
 }

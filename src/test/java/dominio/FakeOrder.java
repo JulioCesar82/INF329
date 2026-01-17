@@ -10,10 +10,30 @@ import java.util.Date;
  */
 public class FakeOrder extends Order {
 
-    public FakeOrder(int id, Customer customer, Date date, Cart cart,
-                     String comment, ShipTypes shipType, Date shipDate, StatusTypes status,
-                     Address billingAddress, Address shippingAddress, CCTransaction cc) {
-        super(id, customer, date, cart, comment, shipType, shipDate, status, billingAddress, shippingAddress, cc);
+    public FakeOrder(
+        int id,
+        Customer customer,
+        Date date,
+        Cart cart,
+        String comment,
+        ShipTypes shipType,
+        Date shipDate,
+        StatusTypes status,
+        Address billingAddress,
+        Address shippingAddress,
+        CCTransaction cc) {
+            super(
+                id,
+                customer,
+                date,
+                cart,
+                comment,
+                shipType,
+                shipDate,
+                status,
+                billingAddress,
+                shippingAddress,
+                cc);
     }
 
     /**

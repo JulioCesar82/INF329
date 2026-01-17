@@ -348,7 +348,7 @@ public class Bookmarket {
         // 1. Agrega a quantidade de vendas por livro.
         Map<Book, Long> salesByBook = getBookstoreStream()
             .flatMap(bookstore -> ((Bookstore) bookstore).getOrdersByCreation().stream())
-            .filter(order -> order.getStatus() == StatusTypes.SHIPPED)                  // adicionado o filtro pelo status do order conforme apontado no BUG
+            .filter(order -> order.getStatus() == StatusTypes.SHIPPED) // adicionado o filtro pelo status do order conforme apontado no BUG
             .flatMap(order -> ((Order) order).getLines().stream())
             .filter(orderLine -> {
                 if (category == null)
@@ -1039,7 +1039,6 @@ public class Bookmarket {
             this.shippingDate = shippingDate;
             this.addressId = addressId;
             this.now = now;
-
         }
 
         /**

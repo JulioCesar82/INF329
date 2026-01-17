@@ -735,12 +735,30 @@ public class Bookstore implements Serializable {
         return order;
     }
 
-    protected Order newOrderInstance(int idOrder, Customer customer, Date date, Cart cart,
-            String comment, ShipTypes shipType, Date shipDate,
-            StatusTypes status, Address billingAddress, Address shippingAddress,
-            CCTransaction cc) {
-        return new Order(idOrder, customer, date, cart, comment, shipType,
-                shipDate, status, billingAddress, shippingAddress, cc);
+    protected Order newOrderInstance(
+        int idOrder,
+        Customer customer,
+        Date date,
+        Cart cart,
+        String comment,
+        ShipTypes shipType,
+        Date shipDate,
+        StatusTypes status,
+        Address billingAddress,
+        Address shippingAddress,
+        CCTransaction cc) {
+            return new Order(
+                idOrder,
+                customer,
+                date,
+                cart,
+                comment,
+                shipType,
+                shipDate,
+                status,
+                billingAddress,
+                shippingAddress,
+                cc);
     }
 
     private static Random rand;

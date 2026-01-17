@@ -1,6 +1,4 @@
 package servico;
-
-
 import dominio.Address;
 import dominio.CCTransaction;
 import dominio.Cart;
@@ -33,11 +31,29 @@ public class FakeBookstore extends Bookstore {
     }
 
     @Override
-    protected Order newOrderInstance(int idOrder, Customer customer, Date date, Cart cart,
-            String comment, ShipTypes shipType, Date shipDate,
-            StatusTypes status, Address billingAddress, Address shippingAddress,
-            CCTransaction cc) {
-        return new FakeOrder(idOrder, customer, date, cart, comment, shipType,
-                shipDate, status, billingAddress, shippingAddress, cc);
+    protected Order newOrderInstance(
+        int idOrder, 
+        Customer customer, 
+        Date date, 
+        Cart cart,
+        String comment, 
+        ShipTypes shipType, 
+        Date shipDate,
+        StatusTypes status, 
+        Address billingAddress, 
+        Address shippingAddress,
+        CCTransaction cc) {
+        return new FakeOrder(
+            idOrder, 
+            customer, 
+            date,
+            cart,
+            comment,
+            shipType,
+            shipDate,
+            status,
+            billingAddress,
+            shippingAddress,
+            cc);
     }    
 }

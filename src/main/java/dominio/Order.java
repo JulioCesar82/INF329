@@ -242,8 +242,4 @@ public class Order implements Serializable {
     public ArrayList<OrderLine> getLines() {
         return lines;
     }
-
-
-
-
 }

@@ -1,6 +1,7 @@
 package servico;
 
 import dominio.ShipTypes;
+import dominio.StatusTypes;
 import dominio.Book;
 import dominio.Address;
 import dominio.BestsellerBook;
@@ -347,6 +348,7 @@ public class Bookmarket {
         // 1. Agrega a quantidade de vendas por livro.
         Map<Book, Long> salesByBook = getBookstoreStream()
             .flatMap(bookstore -> ((Bookstore) bookstore).getOrdersByCreation().stream())
+            .filter(order -> order.getStatus() == StatusTypes.SHIPPED) // adicionado o filtro pelo status do order conforme apontado no BUG
             .flatMap(order -> ((Order) order).getLines().stream())
             .filter(orderLine -> {
                 if (category == null)
@@ -377,10 +379,6 @@ public class Bookmarket {
             .limit(limit)
             .collect(Collectors.toList());
     }
-
-
-
-
 
     /**
      *

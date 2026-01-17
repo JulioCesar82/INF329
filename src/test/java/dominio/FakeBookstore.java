@@ -7,7 +7,11 @@ import dominio.FakeOrder;
 import dominio.Order;
 import dominio.ShipTypes;
 import dominio.StatusTypes;
+import servico.Bookstore;
+
 import java.util.Date;
+
+import static servico.Bookstore.booksById;
 
 /**
  * Uma implementação "fake" da Bookstore para uso em testes.
@@ -56,4 +60,15 @@ public class FakeBookstore extends Bookstore {
             shippingAddress,
             cc);
     }    
+
+    
+    /**
+     * Retorna o número total de livros no sistema.
+     *
+     * @return O número total de livros.
+     */
+    public static int getBookCount() {
+        return booksById.size();
+    }
+
 }
